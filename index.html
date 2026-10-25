@@ -1,0 +1,185 @@
+<!doctype html>
+
+<html lang="pt-BR">
+
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://geocoding-api.open-meteo.com https://power.larc.nasa.gov https://estufa-api.josequiriri132.workers.dev; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#092f38"><title>Estufa Solar — Fornadas e Secagem</title>
+
+<style>
+
+:root{font-family:Arial,Helvetica,sans-serif;color:#122c30;background:#103b43;font-size:15px}*{box-sizing:border-box}body{margin:0;background-image:radial-gradient(#ffffff19 1px,transparent 1px);background-size:12px 12px}a{color:#003b9a}button,input,select{font:inherit}button,.button{cursor:pointer;padding:9px 16px;background:#e4e4dc;color:#172f32;border:2px solid;border-color:#fff #737b78 #737b78 #fff;text-decoration:none;display:inline-block;font-weight:bold}button:hover,.button:hover{background:#f6f2d8}button:active{border-color:#737b78 #fff #fff #737b78}button:disabled{cursor:not-allowed;opacity:.55}.masthead{max-width:1100px;margin:30px auto 0;color:#fff;padding:0 12px}.eyebrow{font:12px 'Courier New',monospace;letter-spacing:2px;color:#acd4c9}.heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin:12px 0 20px}h1{font:700 clamp(26px,5vw,46px) 'Courier New',monospace;margin:4px 0;letter-spacing:-2px}h1 span{color:#ebd78c}.stamp{border:1px solid #94aca4;padding:9px 14px;font:12px 'Courier New',monospace;line-height:1.6;color:#d1e5da}.window{max-width:1100px;margin:0 auto 32px;background:#c7cfca;border:3px solid;border-color:#ebeee7 #16333b #16333b #ebeee7;box-shadow:10px 10px 0 #062a30}.titlebar{background:#092f38;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font:700 13px 'Courier New',monospace}.titlebar small{color:#e4d38d}.nav{padding:12px 16px 0;display:flex;gap:5px;border-bottom:1px solid #86998d}.nav button{padding:10px 18px;font-size:13px;border-bottom:0}.nav button[aria-selected=true]{background:#f5f3e7;transform:translateY(1px)}.content{background:#f5f3e7;padding:26px}.intro{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px}h2{font:700 24px 'Courier New',monospace;margin:0 0 7px}.muted{color:#526a65;font-size:13px;line-height:1.6}.badge{white-space:nowrap;font:700 12px 'Courier New',monospace;border:1px solid #bba555;padding:9px;background:#f5e9b7}.badge.offline{background:#f3d7cb;border-color:#a45440}.badge.offline .dot{background:#a45440}.badge.online{background:#d2e8cc;border-color:#6b9364}.dot{display:inline-block;width:8px;height:8px;background:#9d7928;margin-right:7px}.online .dot{background:#2e7147}.meters{display:grid;grid-template-columns:1fr 1fr;gap:16px}.meter{background:#e3e7dc;padding:19px;border:1px solid #a3b3a6;position:relative}.label{font:700 12px 'Courier New',monospace;letter-spacing:1px}.display{background:#122d2c;color:#d6e7a8;padding:18px 15px;margin:14px 0 10px;font:700 clamp(38px,7vw,60px) 'Courier New',monospace;box-shadow:inset 2px 2px 0 #071e20;letter-spacing:-3px}.unit{font-size:25px;letter-spacing:0;color:#94bda5}.notice{padding:13px 16px;background:#f3e9bf;border-left:4px solid #ac8d38;margin:18px 0;font-size:13px;line-height:1.6}.lower{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin:22px 0}.box{border:1px solid #a4b3a4;padding:18px;background:#fffef6}h3{font:700 15px 'Courier New',monospace;margin:0 0 16px}.readout{display:flex;justify-content:space-between;gap:15px;padding:10px 0;border-bottom:1px dotted #bec8bb;font-size:13px}.readout:last-child{border:0}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.controls button{font-size:12px}.machine{display:flex;gap:15px;align-items:center}.fan{width:48px;height:48px;flex-shrink:0;color:#5d7969}.connection{font:12px 'Courier New',monospace;padding:11px;background:#e2e8df;line-height:1.7}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:26px 0 15px}.section-title h3{margin:0}.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}.chart{border:1px solid #a4b3a4;padding:16px;background:#fffef6;min-width:0}.chart svg{width:100%;height:auto;display:block}.empty{height:190px;display:flex;align-items:center;justify-content:center;text-align:center;background:repeating-linear-gradient(0deg,transparent,transparent 35px,#526a6512 36px);color:#657a70;font:13px 'Courier New',monospace;padding:20px}.legend{font:11px 'Courier New',monospace;color:#526a65;margin-top:12px}.footerbar{font:11px 'Courier New',monospace;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 15px;background:#dce1d7;border-top:1px solid #94a799}.under{max-width:1100px;margin:-14px auto 30px;text-align:center;color:#b0cac1;font:11px 'Courier New',monospace;line-height:1.8;padding:0 18px}.under a{color:#e8dcab}.import-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:16px 0}input[type=file]{max-width:100%;font-size:13px}select{padding:7px;background:white;border:1px solid #9bad9f}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px;border-bottom:1px solid #c7d0bf}th{font-family:'Courier New',monospace;background:#e9ecdf}.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.about-grid p{line-height:1.7;font-size:14px}.status-live{font-size:12px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #b5841e;outline-offset:3px}[hidden]{display:none!important}@media(max-width:720px){.masthead{margin-top:18px}.heading{align-items:start}.stamp{display:none}.window{margin:0 10px 24px;box-shadow:5px 5px 0 #062a30}.content{padding:18px 13px}.intro{align-items:start;flex-direction:column}.meters,.lower,.charts,.about-grid{grid-template-columns:1fr}.nav{padding:10px 7px 0}.nav button{padding:10px;font-size:12px}.titlebar{font-size:11px}.titlebar small{display:none}.display{font-size:54px}.meter{padding:15px}.lower{margin-top:16px}.under{margin-top:0}}
+
+
+.lab-banner{max-width:1100px;margin:0 auto 14px;padding:13px 17px;background:#f5e9b7;border:2px solid #bb9d45;font:12px 'Courier New',monospace;line-height:1.6}
+.form-grid,.result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.field{display:flex;flex-direction:column;gap:7px;font-size:13px}.field label,.field legend{font-weight:bold}.field input,.field select{width:100%;min-width:0;padding:10px;border:1px solid #9bad9f;background:#fffef6;color:#122c30}.field small{font-size:11px;line-height:1.5;color:#526a65}.span2{grid-column:span 2}.full{grid-column:1/-1}
+.lab-form{border:1px solid #a4b3a4;background:#e9ecdf;padding:20px;margin:18px 0}.lab-form h3{margin-top:10px}
+.batch-item{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:15px 0;border-bottom:1px dotted #a4b3a4}.short-empty{height:100px}
+.forecast-hero{background:#122d2c;color:#d6e7a8;padding:23px;margin:20px 0}.forecast-hero strong{display:block;font:700 27px 'Courier New',monospace;line-height:1.3;margin:12px 0}.forecast-hero span{font-size:12px;color:#cfdbc1}
+.result-grid>div{padding:14px;border:1px solid #a4b3a4;background:#e9ecdf}.result-grid small{display:block;color:#526a65;line-height:1.5}.result-grid b{display:block;font:700 18px 'Courier New',monospace;margin-top:7px}
+.checks{display:flex;flex-wrap:wrap;gap:18px;margin:18px 0}.checks label{display:flex;align-items:center;gap:8px;font-size:13px}
+.summary-strip{border:1px solid #a4b3a4;padding:16px;background:#e3e7dc;margin-top:16px;font:13px 'Courier New',monospace}
+details{border:1px solid #a4b3a4;padding:15px;background:#fffef6;margin:20px 0}summary{cursor:pointer;font-weight:bold}details p{font-size:13px;line-height:1.7}
+.nav{flex-wrap:wrap}.notice a{font-weight:bold}.lab-form fieldset{border:0;padding:0;margin:15px 0}.lab-form legend{font:700 15px 'Courier New',monospace;padding-bottom:12px}.lab-status{min-height:25px}
+@media(max-width:720px){.form-grid,.result-grid{grid-template-columns:1fr 1fr}.batch-item{display:block}.lab-banner{margin:0 10px 12px}.span2{grid-column:1/-1}}@media(max-width:460px){.form-grid,.result-grid{grid-template-columns:1fr}.span2{grid-column:auto}.forecast-hero strong{font-size:22px}.nav button{padding:10px 8px}}
+
+.lab-banner{font:12px 'Courier New',monospace;padding:10px 14px}.arrival-clock{margin-top:20px;background:#20323e;border:3px solid;border-color:#eee2b9 #0b1820 #0b1820 #eee2b9;box-shadow:4px 4px 0 #b2b8ac;color:#f1e1a0}
+.clock-title{display:flex;justify-content:space-between;gap:12px;background:#5c5378;color:#fff4d3;padding:9px 13px;font:700 12px 'Courier New',monospace;letter-spacing:.7px}
+.clock-body{display:flex;align-items:center;gap:26px;padding:26px}.pixel-hourglass{width:88px;height:110px;flex-shrink:0;filter:drop-shadow(4px 4px 0 #0c2026)}.clock-copy{min-width:0}.clock-copy>.label{font-size:11px;color:#d2d6bf;letter-spacing:1px}
+#time-main{font:700 clamp(28px,5vw,52px) 'Courier New',monospace;line-height:1.1;margin:13px 0;overflow-wrap:anywhere}.days-digits{font-size:clamp(48px,8vw,76px);letter-spacing:-4px}.days-unit{display:block;font:13px 'Courier New',monospace;letter-spacing:2px;margin-top:5px;text-transform:uppercase}
+#time-caption{font-size:12px;line-height:1.6;color:#dce0ce;margin:10px 0 0}.clock-bottom{border-top:1px dotted #6d7b78;padding:14px 20px;font:11px 'Courier New',monospace;line-height:1.6;color:#d9e0c4}
+.clock-track{height:10px;background:repeating-linear-gradient(90deg,#102732 0 15px,#20323e 15px 19px);border:1px solid #7d8978;margin-bottom:9px}.clock-track>div{height:100%;background:repeating-linear-gradient(90deg,#e8ca75 0 15px,transparent 15px 19px);transition:width .3s}
+.clock-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px}.clock-actions small{font-size:10px}.clock-actions button{font-size:11px;padding:6px 9px}.at-target .clock-title{background:#397359}
+.sand{animation:sand-fall 1.4s steps(3,end) infinite}@keyframes sand-fall{0%{transform:translateY(-3px);opacity:.6}50%{opacity:1}100%{transform:translateY(4px);opacity:.4}}
+.wood-species{font:700 13px 'Courier New',monospace;margin:0 0 20px}.wood-species span{font:12px Arial,sans-serif;color:#526a65;margin-left:10px}.place-row{display:flex;gap:10px;align-items:end}.city-field{flex:1}.direction-field{max-width:350px}
+#city-results button{text-align:left;font-size:12px}.lab-form{margin-top:24px}.batch-item .controls{flex-shrink:0}.summary-strip{font-size:12px;line-height:1.6}#climate-note{margin-bottom:0}#batch-message:empty,#batch-check:empty{display:none}
+@media(max-width:720px){.clock-body{gap:17px;padding:21px 15px}.pixel-hourglass{width:65px;height:86px}.clock-title{font-size:10px;padding:9px}.clock-actions{align-items:start}.clock-bottom{padding:12px 15px}.batch-item .controls{margin-bottom:0}}
+@media(prefers-reduced-motion:reduce){.sand{animation:none}.clock-track>div{transition:none}}
+ .fornada-history-title{margin-top:0}.fornada-history-title h2{margin:0}
+.fornada-log{border:1px solid #9aab9d;background:#fffef6;max-height:290px;overflow:auto}
+.fornada-history-table{font-size:12px;min-width:790px}.fornada-history-table th{position:sticky;top:0;z-index:1;background:#e0e6da;font-size:11px}
+.fornada-history-table th,.fornada-history-table td{padding:8px 9px;white-space:nowrap}
+.fornada-name{max-width:195px;overflow:hidden;text-overflow:ellipsis}.fornada-place{max-width:135px;overflow:hidden;text-overflow:ellipsis}
+.fornada-actions{display:flex;gap:5px}.fornada-actions button{padding:4px 7px;font-size:11px;font-weight:normal}
+.selected-fornada{background:#f3efce}.history-empty{padding:20px!important;color:#526a65;text-align:center}
+.history-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;min-height:24px;margin-top:9px}
+.history-feedback button{padding:5px 8px;font-size:11px;flex-shrink:0}.history-divider{border:0;border-top:1px solid #b2bda9;margin:24px 0}
+@media(max-width:720px){.history-feedback{align-items:start;flex-wrap:wrap}.fornada-log{max-height:250px}} </style></head>
+
+<body><header class="masthead"><div class="eyebrow">PETIT PIANO · BASTIDORES DA FÁBRICA</div><div class="heading"><div><h1>ESTUFA <span>SOLAR</span></h1><div class="eyebrow">MADEIRA BEM CUIDADA. HISTÓRIAS BEM FEITAS.</div></div><div class="stamp">SOROCABA / SP<br>PRÉVIA LOCAL · NÃO PUBLICADA</div></div></header>
+
+<div class="lab-banner"><b>ESTUFA SOLAR</b> · Temperatura e umidade do ar pelo receptor atual. Sondas da madeira a instalar. <a href="https://josequiriri132-coder.github.io/estufa-solar/" target="_blank" rel="noopener">Abrir painel real ↗</a></div><main class="window"><div class="titlebar"><span>▣ FÁBRICA.EXE — Central de secagem</span><small>PINUS ELLIOTTII / FORNADAS E SECAGEM</small></div><nav class="nav" role="tablist" aria-label="Seções da estufa"><button role="tab" id="tab-painel" aria-selected="true" aria-controls="painel">Painel</button><button role="tab" id="tab-fornada" aria-selected="false" aria-controls="fornada" tabindex="-1">Fornada</button><button role="tab" id="tab-historico" aria-selected="false" aria-controls="historico" tabindex="-1">Histórico</button><button role="tab" id="tab-fabrica" aria-selected="false" aria-controls="fabrica" tabindex="-1">A fábrica</button></nav>
+
+<div class="content"><section id="painel" role="tabpanel" aria-labelledby="tab-painel"><div class="intro"><div><h2>De olho na secagem</h2><div class="muted">O ambiente da estufa e o caminho da sua madeira até a meta.</div></div><div class="badge" id="badge"><span class="dot"></span><span id="conexao">CONSULTANDO INTERNET</span></div></div>
+
+<article class="arrival-clock" id="time-remaining" aria-labelledby="time-heading">
+<div class="clock-title"><span id="time-heading">⌛ SECAGEM.EXE</span><span id="time-goal">SUA PRÓXIMA CARGA</span></div>
+<div class="clock-body">
+<svg class="pixel-hourglass" viewBox="0 0 80 100" aria-hidden="true" shape-rendering="crispEdges">
+<path d="M12 4H68V12H60V25L46 43V57L60 75V88H68V96H12V88H20V75L34 57V43L20 25V12H12Z" fill="#0c222b"/>
+<path d="M20 8H60V12H56V25L42 43V57L56 75V88H60V92H20V88H24V75L38 57V43L24 25V12H20Z" fill="#d5e9d9"/>
+<path d="M28 16H52V24L40 38L28 24Z" fill="#e6c66e"/>
+<path d="M28 84V77L40 65L52 77V84Z" fill="#e6c66e"/>
+<path class="sand" d="M38 43H42V49H38ZM38 53H42V59H38Z" fill="#b39340"/>
+<path d="M10 2H70V8H10ZM10 92H70V98H10Z" fill="#eedb9f"/>
+</svg>
+<div class="clock-copy"><div class="label">TEMPO ATÉ A META DE UMIDADE</div><div id="time-main" aria-live="polite">--</div><p id="time-caption">Cadastre a madeira para começar.</p></div>
+</div>
+<div class="clock-bottom"><div class="clock-track" aria-hidden="true"><div id="time-meter-fill"></div></div><div id="time-meta">Pinus elliottii · sua próxima carga</div><div class="clock-actions"><small>Estimativa preliminar, ajustável pelas leituras.</small><button id="timer-edit" type="button">Minha fornada →</button></div></div>
+</article><div class="meters"><article class="meter"><div class="label">01 / TEMPERATURA DO AR</div><div class="display"><span id="temperatura">--</span> <span class="unit">°C</span></div><div class="muted">Sensor AHT20 · interior da estufa</div></article><article class="meter"><div class="label">02 / UMIDADE RELATIVA DO AR</div><div class="display"><span id="umidade">--</span> <span class="unit">%</span></div><div class="muted">Umidade do ar, não da madeira</div></article></div>
+
+<div class="meters" style="margin-top:16px"><article class="meter"><div class="label">03 / TEMPERATURA DA MADEIRA</div><div class="display"><span id="wood-temperature">--</span> <span class="unit">°C</span></div><div class="muted">Sonda de temperatura a instalar</div></article><article class="meter"><div class="label">04 / UMIDADE DA MADEIRA</div><div class="display"><span id="wood-moisture">--</span> <span class="unit">%</span></div><div class="muted" id="wood-status">Aguardando a nova sonda</div></article></div>
+
+<div class="summary-strip" id="load-summary"></div><p class="muted" id="climate-note"></p>
+<div class="notice" id="aviso" role="status">Consultando as leituras enviadas pela estufa…</div>
+
+<div class="lower"><article class="box"><h3>VENTILAÇÃO / COOLERS · 09H–18H</h3><div class="machine"><svg class="fan" viewBox="0 0 64 64" aria-hidden="true"><rect x="2" y="2" width="60" height="60" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="32" cy="32" r="5" fill="currentColor"/><path d="M30 26C8 24 15 6 29 10L34 26M38 30C40 8 58 15 54 29L38 34M34 38C56 40 49 58 35 54L30 38M26 34C24 56 6 49 10 35L26 30" fill="currentColor"/></svg><div><strong id="coolers">Estado indisponível</strong><div class="muted">Sem confirmação da ESP32</div></div></div><p class="muted">Funcionamento automático diário: 09:00 às 18:00, horário de Brasília. O estado exibido é o comando elétrico; não confirma o giro dos coolers.</p></article>
+
+<article class="box"><h3>DIÁRIO DE BORDO</h3><div class="readout"><span>Controle atual</span><strong id="modo">Aguardando ESP32</strong></div><div class="readout"><span>Horário da última amostra</span><strong id="hora-dispositivo">Aguardando ESP32</strong></div><div class="readout"><span>Último envio recebido</span><strong id="ultima">Nenhum</strong></div><div class="readout"><span>Relógio de Brasília</span><strong id="relogio">--:--</strong></div><div class="muted" style="margin-top:10px">Relógio exibido: hora do seu navegador no fuso de Brasília. Não confirma o relógio da ESP32.</div></article></div>
+
+<div class="connection">&gt; MADEIRA: cadastre sua carga na aba Fornada.<br>&gt; ACOMPANHAMENTO: o tempo até a meta aparece acima.</div></section>
+
+
+
+<section id="fornada" role="tabpanel" aria-labelledby="tab-fornada" hidden>
+<div class="intro"><div><h2>Da tábua à próxima nota</h2><div class="muted">Diga o que entra. A estufa faz as contas.</div></div><button type="button" id="start-new">Nova fornada +</button></div>
+
+<form id="batch-form" class="lab-form"><input id="batch-id" type="hidden">
+<h3 id="form-title">O QUE VAI ENTRAR NA ESTUFA</h3>
+<div class="wood-species">PINUS ELLIOTTII <span>Madeira desta versão</span></div>
+<div class="form-grid">
+<div class="field"><label for="b-length">Comprimento C (mm)</label><input id="b-length" type="number" min="1" max="10000" step="1" value="1000" required></div>
+<div class="field"><label for="b-width">Largura A (mm)</label><input id="b-width" type="number" min="1" max="2000" step="1" value="200" required></div>
+<div class="field"><label for="b-thickness">Espessura E (mm)</label><input id="b-thickness" type="number" min="1" max="500" step="1" value="22" required></div>
+<div class="field"><label for="b-quantity">Quantidade de tábuas</label><input id="b-quantity" type="number" min="1" max="10000" step="1" value="16" required></div>
+<div class="field"><label for="b-separator">Altura dos separadores (mm)</label><input id="b-separator" type="number" min="5" max="100" step=".1" value="15" required><small>Altura do espaço entre uma camada e outra.</small></div>
+<div class="field"><label for="b-initial">Umidade inicial (%)</label><input id="b-initial" type="number" min="1" max="200" step=".1" value="60" required></div>
+<div class="field"><label for="b-target">Umidade desejada (%)</label><input id="b-target" type="number" min="7" max="30" step=".1" value="18" required></div>
+</div>
+<h3 style="margin-top:26px">ONDE ESTÁ A ESTUFA</h3>
+<div class="place-row"><div class="field city-field"><label for="city-query">Cidade no Brasil</label><input id="city-query" value="Sorocaba" minlength="3" autocomplete="off"></div><button id="find-city" type="button">Buscar cidade</button></div>
+<p class="muted" id="chosen-city" role="status">Sorocaba / São Paulo</p><div class="controls" id="city-results"></div>
+<div class="field direction-field"><label for="b-direction">O coletor está voltado para</label><select id="b-direction"><option value="N">Norte</option><option value="S">Sul</option><option value="L">Leste</option><option value="O">Oeste</option></select></div>
+<p class="muted">Os dados climáticos são escolhidos automaticamente pelo local.</p>
+<div class="controls"><button type="submit">Salvar e acompanhar →</button></div>
+<p id="batch-check" class="muted"></p>
+</form>
+<div id="batch-message" class="muted" role="status"></div>
+<div class="controls"><button id="close-batch" type="button" disabled>Encerrar fornada selecionada</button></div>
+<details><summary>Guardar meus cadastros</summary><div class="controls"><button id="export-simple" type="button">Salvar uma cópia</button><label class="button" for="import-simple">Abrir uma cópia</label><input id="import-simple" type="file" accept=".json,application/json"></div><p id="backup-status" class="muted"></p></details>
+<details><summary>Sobre a previsão</summary><p>A previsão combina a carga, a geometria da estufa e o clima do local. Nesta versão de teste, o prazo ainda é uma estimativa energética preliminar: o modelo de secagem do Pinus será refinado e conferido com as leituras reais. A chapa de policarbonato e os parâmetros térmicos do memorial ainda precisam de confirmação na montagem. Chegar à data prevista não confirma, por si só, que todas as tábuas atingiram a meta.</p><p id="source-note"></p><p>Quando não houver uma série local suficiente do INMET, a climatologia NASA POWER complementa os dados. As fontes são identificadas; dados ausentes não são substituídos por zero. A direção do coletor é considerada automaticamente.</p></details>
+</section>
+<section id="historico" role="tabpanel" aria-labelledby="tab-historico" hidden><div class="section-title fornada-history-title"><h2>Histórico de fornadas</h2><span class="muted" id="fornada-count">0 fornadas</span></div>
+<div class="fornada-log" role="region" aria-label="Histórico de fornadas" tabindex="0">
+<table class="fornada-history-table"><thead><tr><th>Início</th><th>Fornada</th><th>Local</th><th>Tábuas / volume</th><th>Meta</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="fornada-history-body"></tbody></table></div>
+<div class="history-feedback" role="status"><span id="history-message"></span><button id="undo-delete" type="button" hidden>Desfazer exclusão</button></div>
+<hr class="history-divider"><h3>LEITURAS DOS SENSORES</h3><h2>A secagem, hora a hora</h2><p class="muted">Abra um CSV já exportado para consultar o histórico neste navegador. Os gráficos mostram arquivos CSV importados. A leitura ao vivo do painel não recupera registros antigos do receptor.</p><div class="import-row"><button id="usar-esp" type="button">Atualizar leituras</button><a class="button" id="baixar-csv" hidden>Baixar CSV do dia</a></div><div class="import-row"><label class="button" for="arquivo">Abrir CSV da estufa</label><input id="arquivo" type="file" accept=".csv,text/csv"><label for="dia">Dia:</label><select id="dia" disabled><option>Sem registros</option></select></div><div id="mensagem-csv" class="notice" role="status">Sem arquivo aberto. Se você tiver um CSV exportado, selecione-o abaixo.</div><div class="charts"><article class="chart"><h3>TEMPERATURA / °C</h3><div id="grafico-t" class="empty">SEM REGISTROS DE TEMPERATURA</div><div class="legend">Média por hora. Barras: mínima e máxima entre amostras.</div></article><article class="chart"><h3>UMIDADE DO AR / %</h3><div id="grafico-u" class="empty">SEM REGISTROS DE UMIDADE</div><div class="legend">Lacunas indicam horas sem registros.</div></article></div><div class="section-title"><h3>REGISTROS POR HORA</h3><span class="muted">Mínima / média / máxima entre amostras</span></div><div class="table-wrap"><table><thead><tr><th>Hora</th><th>Amostras</th><th>Temperatura °C</th><th>Umidade %</th></tr></thead><tbody id="tabela"><tr><td colspan="4">Aguardando importação de um arquivo real.</td></tr></tbody></table></div><p class="muted">Um dia com registros a cada cinco minutos pode ter até 12 amostras por hora. Um pico entre amostras pode não ser registrado. Arquivos abertos manualmente ficam apenas nesta sessão do navegador. Períodos sem registros aparecem como lacunas.</p></section>
+
+<section id="fabrica" role="tabpanel" aria-labelledby="tab-fabrica" hidden><h2>Antes da primeira nota</h2><p class="muted">Uma visita aos bastidores dos pianinhos.</p><div class="about-grid"><article class="box"><h3>DA MADEIRA AO INSTRUMENTO</h3><p>O cuidado começa antes da montagem. Nesta estufa solar, acompanhamos o ambiente de secagem da madeira que faz parte da nossa fábrica.</p><p>O painel reúne a temperatura e a umidade relativa do ar. Essas informações ajudam a observar como o ambiente muda ao longo do dia.</p></article><article class="box"><h3>PEQUENA CENTRAL, GRANDES CUIDADOS</h3><div class="readout"><span>Local</span><strong>Sorocaba / SP</strong></div><div class="readout"><span>Sensor</span><strong>AHT20</strong></div><div class="readout"><span>Controle</span><strong>ESP32 + MOSFET</strong></div><div class="readout"><span>Ventilação</span><strong>Dois coolers</strong></div><p>A leitura do ar não substitui a medição da umidade da madeira para decidir quando ela está pronta.</p></article></div><p><a class="button" href="https://pianinhos-1996.josequiriri132.chatgpt.site/">← Visitar os pianinhos</a></p></section></div>
+
+<footer class="footerbar"><span>ESTUFA SOLAR / FÁBRICA</span><span id="rodape-status">CONSULTANDO LEITURAS PELA INTERNET</span><span>FEITO COM CUIDADO, PIXEL POR PIXEL.</span></footer></main><div class="under">Um painel com alma de 1996 e cuidado de hoje.<br>Cópia local de desenvolvimento · nada foi publicado.</div>
+
+<script>
+
+
+
+'use strict';
+
+const $=id=>document.getElementById(id);
+
+const tabs=['painel','fornada','historico','fabrica'];
+
+function abrir(nome){if(nome==='batches')nome='fornada';if(!tabs.includes(nome))nome='painel';tabs.forEach(id=>{const ativo=id===nome;$('tab-'+id).setAttribute('aria-selected',String(ativo));$('tab-'+id).tabIndex=ativo?0:-1;$(id).hidden=!ativo;});}
+
+tabs.forEach((id,i)=>{$('tab-'+id).addEventListener('click',()=>{abrir(id);history.replaceState(null,'','#'+id);});$('tab-'+id).addEventListener('keydown',e=>{if(['ArrowRight','ArrowLeft','Home','End'].includes(e.key)){e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?3:(i+(e.key==='ArrowRight'?1:3))%4;abrir(tabs[n]);$('tab-'+tabs[n]).focus();}});});
+
+abrir(location.hash.slice(1));
+
+function relogio(){$('relogio').textContent=new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+
+relogio();setInterval(relogio,1000);
+
+let registros=[],fonte='csv',geracao=0,estadoOcupado=false,diasOcupado=false,historicoOcupado=false,ultimoRecebimento=0;
+
+function parseCSV(text){const linhas=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/);const cab=linhas.shift().split(',').map(v=>v.trim());const exigidos=['data_hora_Brasilia','epoch','temperatura_C','umidade_relativa_pct'];if(!exigidos.every(n=>cab.includes(n)))throw Error('Formato não reconhecido. Use o CSV exportado pelo programa EstufaAHT20Historico.');const pos=Object.fromEntries(cab.map((v,i)=>[v,i]));const vistos=new Set();const dados=[];for(const linha of linhas){const col=linha.split(',');const data=col[pos.data_hora_Brasilia]?.trim();const t=Number(col[pos.temperatura_C]),u=Number(col[pos.umidade_relativa_pct]),epoch=Number(col[pos.epoch]);if(!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test(data)||!col[pos.temperatura_C]?.trim()||!col[pos.umidade_relativa_pct]?.trim()||!Number.isFinite(t)||!Number.isFinite(u)||t< -40||t>85||u<0||u>100||!Number.isFinite(epoch)||epoch<=0||vistos.has(epoch))continue;const h=Number(data.slice(11,13)),m=Number(data.slice(14,16));if(h>23||m>59)continue;const esperado=new Date(epoch*1000-10800000).toISOString().slice(0,19);if(esperado!==data.replace(' ','T'))continue;vistos.add(epoch);dados.push({dia:data.slice(0,10),hora:h,t,u,epoch});}if(!dados.length)throw Error('O arquivo não contém amostras válidas.');return dados.sort((a,b)=>a.epoch-b.epoch);}
+
+function agrupar(dados){return Array.from({length:24},(_,h)=>{const l=dados.filter(r=>r.hora===h);if(!l.length)return null;const res=k=>{const vs=l.map(r=>r[k]);return {min:Math.min(...vs),max:Math.max(...vs),media:vs.reduce((a,b)=>a+b,0)/vs.length};};return {hora:h,n:l.length,t:res('t'),u:res('u')};});}
+
+const fmt=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+function desenhar(id,horas,chave){const box=$(id),validos=horas.filter(Boolean);box.className='';if(!validos.length){box.className='empty';box.textContent='SEM REGISTROS';return;}let min=chave==='u'?0:Math.floor(Math.min(...validos.map(r=>r.t.min))/5)*5-2,max=chave==='u'?100:Math.ceil(Math.max(...validos.map(r=>r.t.max))/5)*5+2;if(max-min<10)max=min+10;const x=h=>43+h/23*370,y=v=>172-(v-min)/(max-min)*143;let svg='<svg viewBox="0 0 440 210" role="img" aria-label="Médias horárias de '+(chave==='t'?'temperatura':'umidade')+'"><rect width="440" height="210" fill="#fffef6"/>';for(let i=0;i<5;i++){const v=min+(max-min)*i/4;svg+='<line x1="43" x2="413" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#dbe1d1"/><text x="37" y="'+(y(v)+4)+'" text-anchor="end" font-size="10" fill="#526a65">'+fmt(v)+'</text>';}let ultimo=null;horas.forEach((r,h)=>{if(r){svg+='<line x1="'+x(h)+'" x2="'+x(h)+'" y1="'+y(r[chave].min)+'" y2="'+y(r[chave].max)+'" stroke="#226f60" stroke-width="6" opacity=".3"/>';if(ultimo!==null)svg+='<line x1="'+x(ultimo.hora)+'" y1="'+y(ultimo[chave].media)+'" x2="'+x(h)+'" y2="'+y(r[chave].media)+'" stroke="#226f60" stroke-width="2"/>';svg+='<circle cx="'+x(h)+'" cy="'+y(r[chave].media)+'" r="4" fill="#226f60"><title>'+String(h).padStart(2,'0')+'h: '+fmt(r[chave].media)+(chave==='t'?' °C':' %')+' / '+r.n+' amostras</title></circle>';ultimo=r;}else ultimo=null;});[0,6,12,18,23].forEach(h=>{svg+='<text x="'+x(h)+'" y="195" text-anchor="middle" font-size="11" fill="#526a65">'+h+'h</text>';});box.innerHTML=svg+'</svg>';}
+
+
+
+function renderizar(horas){desenhar('grafico-t',horas,'t');desenhar('grafico-u',horas,'u');$('tabela').replaceChildren();for(let h=0;h<24;h++){const r=horas[h],tr=document.createElement('tr');const valores=r?[String(h).padStart(2,'0')+':00',r.n,[r.t.min,r.t.media,r.t.max].map(fmt).join(' / '),[r.u.min,r.u.media,r.u.max].map(fmt).join(' / ')]:[String(h).padStart(2,'0')+':00','0','Sem registros','Sem registros'];valores.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td);});$('tabela').append(tr);}}
+
+function exibirCSV(){renderizar(agrupar(registros.filter(r=>r.dia===$('dia').value)));}
+
+function escolherDias(dias,anterior){$('dia').replaceChildren();dias.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d.split('-').reverse().join('/');$('dia').append(o);});$('dia').disabled=!dias.length;if(dias.includes(anterior))$('dia').value=anterior;if(!dias.length){const o=document.createElement('option');o.value='';o.textContent='Sem registros';$('dia').append(o);}}
+
+let ultimaAmostraInternet=null;
+function atualizarEstado(){window.dispatchEvent(new Event('live-refresh'));}
+function verificarIdadeInternet(){}
+function semConexao(){/* A simulação local não depende da conexão com a internet. */}
+function diaValido(d){if(typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;const t=new Date(d+'T00:00:00Z');return Number.isFinite(t.getTime())&&t.toISOString().slice(0,10)===d;}
+
+function converterAmostras(amostras){if(!Array.isArray(amostras))throw Error('Histórico inválido');const vistos=new Set();const validas=[];for(const r of amostras){if(!Array.isArray(r)||r.length!==3||!r.every(Number.isFinite))continue;const [minuto,t,u]=r;if(!Number.isInteger(minuto)||minuto<0||minuto>=1440||t< -40||t>85||u<0||u>100||vistos.has(Math.floor(minuto/5)))continue;vistos.add(Math.floor(minuto/5));validas.push({hora:Math.floor(minuto/60),t,u});}if(amostras.length&&!validas.length)throw Error('Nenhuma amostra válida');return validas;}
+
+$('dia').addEventListener('change',()=>{geracao++;$('baixar-csv').hidden=true;renderizar(Array(24).fill(null));exibirCSV();});
+
+$('usar-esp').addEventListener('click',atualizarEstado);
+
+$('arquivo').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;const g=++geracao;try{if(f.size>2000000)throw Error('Use um CSV de até 2 MB.');const novos=parseCSV(await f.text());if(g!==geracao)return;registros=novos;fonte='csv';$('baixar-csv').hidden=true;escolherDias([...new Set(registros.map(r=>r.dia))].sort().reverse(),'');$('mensagem-csv').textContent=registros.length+' amostras do arquivo '+f.name+'. Arquivo local; sem envio ao servidor. Este laboratório não consulta o histórico da placa.';exibirCSV();}catch(err){if(g===geracao)$('mensagem-csv').textContent=err.message+' O histórico anterior foi mantido.';}});
+
+setInterval(verificarIdadeInternet,1000);
+
+window.addEventListener('offline',semConexao);
+
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){verificarIdadeInternet();atualizarEstado();}});
+
+atualizarEstado();setInterval(atualizarEstado,30000);
+
+
+
+
+
+</script><script src="model.js"></script><script src="planner.js"></script><script src="fornadas-store.js"></script><script src="climate-seed.js"></script><script src="live-source.js"></script><script src="app.js"></script></body></html>
+
