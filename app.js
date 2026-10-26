@@ -7,7 +7,7 @@ const fmtDate=t=>new Date(t).toLocaleDateString('pt-BR',{timeZone:'America/Sao_P
 const seed=window.EstufaClimateSeed;
 function go(name){abrir(name);history.replaceState(null,'','#'+name);}
 let state={version:2,batches:[],selected:null,observations:[],climates:{[seed.id]:seed},telemetry:null},storageOK=true,locationChoice={id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon};
-let climateGeneration=0;
+let climateGeneration=0,formMode='selected';
 try{
  const raw=localStorage.getItem(KEY);
  if(raw){const s=JSON.parse(raw);if(s.version===2&&Array.isArray(s.batches)){state={...state,...s,climates:{...s.climates,[seed.id]:seed}};state.batches=state.batches.filter(b=>!M.validate(b).length);}}
@@ -28,7 +28,7 @@ function cloudDocument(d){state.batches=structuredClone(d.batches);state.selecte
 async function refreshCloud(){
  if(readBusy||cloudBusy)return;readBusy=true;
  try{const d=await cloud.load();const changed=!cloudReady||JSON.stringify(canonical)!==JSON.stringify(d.documento);canonical=structuredClone(d.documento);cloudReady=true;
-  if(changed){cloudDocument(d.documento);save();if(!$$('batch-form').dataset.dirty){resetForm();formRevision=cloud.revision;}const b=active();if(b)ensureClimate(b.location);}
+  if(changed){cloudDocument(d.documento);save();if(!$$('batch-form').dataset.dirty){resetForm(formMode==='new');formRevision=cloud.revision;}const b=active();if(b)ensureClimate(b.location);}
   syncStatus=cloudToken?'Fornada sincronizada · edição liberada neste aparelho.':'Fornada sincronizada · igual nos seus aparelhos.';render();
  }catch{syncStatus='Sem acesso às fornadas compartilhadas. O cadastro local foi preservado; edição bloqueada até reconectar.';cloudReady=false;render();}
  finally{readBusy=false;render();}
@@ -107,7 +107,7 @@ function renderFornadaHistory(){
  const date=new Date(Date.parse(v.start+'-03:00')).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'2-digit'});
  return '<tr'+(v.id===state.selected?' class="selected-fornada"':'')+'><td>'+esc(date)+'</td><td class="fornada-name" title="'+esc(v.name)+'">'+esc(v.name)+'</td><td class="fornada-place">'+esc(v.location.name)+'</td><td>'+v.quantity+' · '+n(M.capacity(v).volume,4)+' m³</td><td>'+n(Number(v.target))+'%</td><td>'+(v.status==='closed'?'Encerrada':'Em andamento')+'</td><td class="fornada-actions"><button type="button" data-pick="'+esc(v.id)+'" aria-label="Ver '+esc(v.name)+' no painel">Ver</button><button type="button" data-edit="'+esc(v.id)+'" aria-label="Editar '+esc(v.name)+'">Editar</button><button type="button" data-delete="'+esc(v.id)+'" aria-label="Excluir '+esc(v.name)+'">Excluir</button></td></tr>';
  }).join(''):'<tr><td colspan="7" class="history-empty">Nenhuma fornada no histórico.</td></tr>';
- for(const x of document.querySelectorAll('[data-pick]'))x.onclick=async()=>{if(await changeCloud(()=>{state.selected=x.dataset.pick;}))go('painel');};
+ for(const x of document.querySelectorAll('[data-pick]'))x.onclick=async()=>{if(await changeCloud(()=>{state.selected=x.dataset.pick;})){resetForm();go('painel');}};
  for(const x of document.querySelectorAll('[data-edit]'))x.onclick=()=>edit(x.dataset.edit);
  for(const x of document.querySelectorAll('[data-delete]'))x.onclick=async()=>{
  const id=x.dataset.delete,editing=$$('batch-id').value===id;let removed;
@@ -120,20 +120,24 @@ function renderFornadaHistory(){
 $$('undo-delete').onclick=async()=>{
  let restored;if(await changeCloud(()=>{restored=window.FornadaStore.restore(state);})){resetForm();$$('history-message').textContent='Fornada restaurada: '+restored.name+'.';}
 };
-function resetForm(){
+function fillForm(b){
  formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;
- $$('batch-form').reset();$$('batch-id').value='';$$('form-title').textContent='O QUE VAI ENTRAR NA ESTUFA';
- const b=active();locationChoice=b?{...b.location}:{id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon};
+ for(const k of ['length','width','thickness','quantity','separator','initial','target'])$$('b-'+k).value=b[k];
+ $$('batch-id').value=b.id;$$('b-direction').value=b.direction||'N';locationChoice={...b.location};
+ $$('city-query').value=b.location.name;$$('chosen-city').textContent=b.location.name+' / '+b.location.state;
+ $$('city-results').replaceChildren();$$('form-title').textContent='DADOS DA FORNADA SALVA';
+}
+function resetForm(newForm=false){
+ formMode=newForm?'new':'selected';formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;
+ const b=active();if(b&&!newForm){fillForm(b);return;}
+ $$('batch-form').reset();$$('batch-id').value='';$$('form-title').textContent='CADASTRAR NOVA FORNADA';
+ locationChoice=b?{...b.location}:{id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon};
  $$('city-query').value=locationChoice.name;$$('chosen-city').textContent=locationChoice.name+' / '+locationChoice.state;
  $$('city-results').replaceChildren();$$('b-direction').value=b?.direction||'N';
 }
 function edit(id){
- formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;
  const b=state.batches.find(x=>x.id===id);if(!b)return;
- for(const k of ['length','width','thickness','quantity','separator','initial','target'])$$('b-'+k).value=b[k];
- $$('batch-id').value=b.id;$$('b-direction').value=b.direction||'N';locationChoice={...b.location};
- $$('city-query').value=b.location.name;$$('chosen-city').textContent=b.location.name+' / '+b.location.state;
- $$('form-title').textContent='EDITAR ESTA FORNADA';go('fornada');$$('b-length').focus();
+ formMode='edit';fillForm(b);$$('form-title').textContent='EDITAR ESTA FORNADA';go('fornada');$$('b-length').focus();
 }
 async function fetchJSON(url){
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
@@ -178,10 +182,10 @@ $$('batch-form').onsubmit=async e=>{
  for(const k of ['length','width','thickness','quantity','separator','initial','target'])b[k]=Number($$('b-'+k).value);
  const errors=M.validate(b);if(errors.length){say(errors[0]);return;}
  if(await changeCloud(()=>{if(old)state.batches=state.batches.map(x=>x.id===b.id?b:x);else state.batches.push(b);state.selected=b.id;},formRevision)){
- $$('batch-id').value=b.id;say('Fornada salva e compartilhada.');go('painel');await ensureClimate(b.location);
+ resetForm();say('Fornada salva e compartilhada.');go('painel');await ensureClimate(b.location);
  }
 };
-$$('start-new').onclick=()=>{resetForm();go('fornada');};
+$$('start-new').onclick=()=>{resetForm(true);go('fornada');};
 $$('timer-edit').onclick=()=>{const b=active();if(b)edit(b.id);else{resetForm();go('fornada');}};
 $$('close-batch').onclick=async()=>{await changeCloud(()=>{const b=active();if(b)b.status='closed';});};
 function download(name,text){const u=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);}
@@ -216,7 +220,7 @@ if(active())ensureClimate(active().location);
 setInterval(render,60000);
 
 $$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1';});
-$$('sync-login').onclick=()=>{if(cloudToken){cloudToken='';syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
+$$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty){say('Há alterações não salvas. Salve a fornada antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
 $$('sync-auth-cancel').onclick=()=>{$$('sync-password').value='';$$('sync-auth').close();};
 $$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
  try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();}
