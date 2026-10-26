@@ -25,7 +25,7 @@
    const decoded=decode(data,day);if(g!==geracao)return;
    registros=decoded.rows;fonte='cloud';renderizar(agrupar(registros));clearDownload();
    if(registros.length){downloadURL=URL.createObjectURL(new Blob([csv(registros)],{type:'text/csv;charset=utf-8'}));el('baixar-csv').href=downloadURL;el('baixar-csv').download='estufa-'+day+'.csv';el('baixar-csv').hidden=false;}
-   el('mensagem-csv').textContent=registros.length?registros.length+' leituras de temperatura e umidade do ar. Horário de Brasília. Atualização automática a cada dois minutos enquanto esta aba estiver aberta.':'Ainda não há leituras válidas neste dia.';
+   el('mensagem-csv').textContent=registros.length?registros.length+' leituras de temperatura e umidade do ar. Horário de Brasília. As leituras são gravadas mesmo com o site fechado. Este gráfico se atualiza a cada dois minutos enquanto estiver visível.':'Ainda não há leituras válidas neste dia.';
    if(decoded.failures)el('mensagem-csv').textContent+=' '+decoded.failures+' registros de falha do sensor não entram nas médias.';
   }
   function error(e,g){if(g!==geracao)return;el('mensagem-csv').textContent=([404,503].includes(e.status)?'O histórico ainda não está disponível no receptor. Após configurar o banco e publicar o novo código, as leituras começarão a aparecer.':'Não foi possível atualizar o histórico. Tente novamente. Os gráficos anteriores, se houver, foram mantidos.')+' O painel ao vivo continua independente.';}

@@ -19,6 +19,38 @@ try{
  }
  }
 }catch(e){storageOK=false;}
+let originalLocal=structuredClone(state);
+try{const backup=JSON.parse(localStorage.getItem('estufa-local-antes-sync-v1')||'null');if(!originalLocal.batches.length&&Array.isArray(backup?.batches))originalLocal=backup;}catch{}
+try{if(state.batches.length&&!localStorage.getItem('estufa-local-antes-sync-v1'))localStorage.setItem('estufa-local-antes-sync-v1',JSON.stringify(state));}catch{}
+const cloud=window.FornadasShared.create();
+let cloudReady=false,cloudBusy=false,cloudToken='',formRevision=0,syncStatus='Buscando a fornada compartilhada…',canonical=null,readBusy=false;
+function cloudDocument(d){state.batches=structuredClone(d.batches);state.selected=d.selected;state.trash=structuredClone(d.trash);state.climates={...state.climates,...d.climates};state.observations=[];}
+async function refreshCloud(){
+ if(readBusy||cloudBusy)return;readBusy=true;
+ try{const d=await cloud.load();const changed=!cloudReady||JSON.stringify(canonical)!==JSON.stringify(d.documento);canonical=structuredClone(d.documento);cloudReady=true;
+  if(changed){cloudDocument(d.documento);save();if(!$$('batch-form').dataset.dirty){resetForm();formRevision=cloud.revision;}const b=active();if(b)ensureClimate(b.location);}
+  syncStatus=cloudToken?'Fornada sincronizada · edição liberada neste aparelho.':'Fornada sincronizada · igual nos seus aparelhos.';render();
+ }catch{syncStatus='Sem acesso às fornadas compartilhadas. O cadastro local foi preservado; edição bloqueada até reconectar.';cloudReady=false;render();}
+ finally{readBusy=false;render();}
+}
+async function changeCloud(action,expected=cloud.revision){
+ if(!cloudReady||!cloudToken||cloudBusy||readBusy){say('Libere a edição e aguarde a sincronização antes de salvar.');return false;}
+ if(expected!==cloud.revision){say('A fornada mudou em outro aparelho. Reabra Editar antes de salvar; seus campos atuais foram mantidos.');return false;}
+ cloudBusy=true;syncStatus='Salvando nos seus aparelhos…';render();
+ try{action();const d=await cloud.save(window.FornadasShared.pick(state),cloudToken);canonical=structuredClone(d.documento);cloudDocument(d.documento);save();formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;syncStatus='Salvo na nuvem · os demais aparelhos atualizam em até 15 segundos.';return true;}
+ catch(e){if(canonical)cloudDocument(canonical);if(e.status===401)cloudToken='';syncStatus=e.status===409?'Outra edição chegou primeiro. Reabra a fornada para conferir.':'Não foi possível salvar na nuvem. A alteração não foi aplicada.';say(syncStatus);return false;}
+ finally{cloudBusy=false;render();}
+}
+function syncControls(){
+ const can=cloudReady&&!!cloudToken&&!cloudBusy&&!readBusy;
+ $$('sync-status').textContent=syncStatus;$$('sync-login').textContent=cloudToken?'Bloquear edição':'Liberar edição';
+ $$('sync-migrate').hidden=!(cloudReady&&cloud.revision===0&&canonical?.batches.length===0&&originalLocal.batches.length);
+ $$('sync-migrate').disabled=!can;
+ for(const id of ['start-new','close-batch','undo-delete','import-simple'])$$ (id).disabled=!can||(id==='close-batch'&&(!active()||active().status==='closed'));
+ for(const el of $$('batch-form').querySelectorAll('input,select,button'))el.disabled=!can;
+ $$('backup-status').textContent='Fornadas guardadas na nuvem. Exportar uma cópia continua disponível.';
+ for(const el of document.querySelectorAll('[data-pick],[data-edit],[data-delete]'))el.disabled=!can;
+}
 function active(){return state.batches.find(b=>b.id===state.selected);}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}}
 function say(s){$$('batch-message').textContent=s;}
@@ -55,9 +87,10 @@ function render(){
  $$('rodape-status').textContent=fresh?'LEITURA REAL · NOVAS SONDAS A INSTALAR':'AGUARDANDO LEITURA REAL';
  renderFornadaHistory();
  $$('close-batch').disabled=!b||b.status==='closed';
- $$('backup-status').textContent=storageOK?'Cadastros guardados neste navegador.':'O navegador não está guardando os cadastros. Salve uma cópia.';
+ syncControls();
+ if(!cloudReady){$$('time-main').textContent='--';$$('time-caption').textContent='Aguardando a fornada compartilhada.';$$('time-meta').textContent='Os dados deste aparelho estão preservados.';$$('load-summary').textContent='';return;}
  if(!b){drawTimer(null,null);$$('load-summary').textContent='Cadastre sua fornada na aba Fornada.';$$('batch-check').textContent='';$$('climate-note').textContent='O clima será escolhido automaticamente pelo local.';return;}
- const c=climateFor(b),r=P.forecast(b,c,state.observations);
+ const c=climateFor(b),r=P.forecast(b,c,[],cloud.serverNow());
  drawTimer(b,r);
  $$('load-summary').textContent=b.quantity+' tábuas de '+b.length+' × '+b.width+' × '+b.thickness+' mm · separadores de '+b.separator+' mm · início '+fmtDate(Date.parse(b.start+'-03:00'));
  const cap=M.capacity(b);
@@ -74,31 +107,28 @@ function renderFornadaHistory(){
  const date=new Date(Date.parse(v.start+'-03:00')).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'2-digit'});
  return '<tr'+(v.id===state.selected?' class="selected-fornada"':'')+'><td>'+esc(date)+'</td><td class="fornada-name" title="'+esc(v.name)+'">'+esc(v.name)+'</td><td class="fornada-place">'+esc(v.location.name)+'</td><td>'+v.quantity+' · '+n(M.capacity(v).volume,4)+' m³</td><td>'+n(Number(v.target))+'%</td><td>'+(v.status==='closed'?'Encerrada':'Em andamento')+'</td><td class="fornada-actions"><button type="button" data-pick="'+esc(v.id)+'" aria-label="Ver '+esc(v.name)+' no painel">Ver</button><button type="button" data-edit="'+esc(v.id)+'" aria-label="Editar '+esc(v.name)+'">Editar</button><button type="button" data-delete="'+esc(v.id)+'" aria-label="Excluir '+esc(v.name)+'">Excluir</button></td></tr>';
  }).join(''):'<tr><td colspan="7" class="history-empty">Nenhuma fornada no histórico.</td></tr>';
- for(const x of document.querySelectorAll('[data-pick]'))x.onclick=()=>{state.selected=x.dataset.pick;save();render();go('painel');};
+ for(const x of document.querySelectorAll('[data-pick]'))x.onclick=async()=>{if(await changeCloud(()=>{state.selected=x.dataset.pick;}))go('painel');};
  for(const x of document.querySelectorAll('[data-edit]'))x.onclick=()=>edit(x.dataset.edit);
- for(const x of document.querySelectorAll('[data-delete]'))x.onclick=()=>{
- const id=x.dataset.delete,editing=$$('batch-id').value===id;
- const removed=window.FornadaStore.remove(state,id);if(!removed)return;
- if(editing)resetForm();
- save();render();
- $$('history-message').textContent='Fornada excluída do histórico: '+removed.name+'.';
- $$('undo-delete').focus();
+ for(const x of document.querySelectorAll('[data-delete]'))x.onclick=async()=>{
+ const id=x.dataset.delete,editing=$$('batch-id').value===id;let removed;
+ if(await changeCloud(()=>{removed=window.FornadaStore.remove(state,id);})){if(editing)resetForm();$$('history-message').textContent='Fornada excluída: '+removed.name+'. Você pode desfazer.';}
  };
  const trash=Array.isArray(state.trash)?state.trash:[];
  $$('undo-delete').hidden=trash.length===0;
  if(trash.length)$$('undo-delete').title='Restaurar '+trash.at(-1).batch.name;
 }
-$$('undo-delete').onclick=()=>{
- const restored=window.FornadaStore.restore(state);if(!restored)return;
- save();render();$$('history-message').textContent='Fornada restaurada: '+restored.name+'.';
+$$('undo-delete').onclick=async()=>{
+ let restored;if(await changeCloud(()=>{restored=window.FornadaStore.restore(state);})){resetForm();$$('history-message').textContent='Fornada restaurada: '+restored.name+'.';}
 };
 function resetForm(){
+ formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;
  $$('batch-form').reset();$$('batch-id').value='';$$('form-title').textContent='O QUE VAI ENTRAR NA ESTUFA';
  const b=active();locationChoice=b?{...b.location}:{id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon};
  $$('city-query').value=locationChoice.name;$$('chosen-city').textContent=locationChoice.name+' / '+locationChoice.state;
  $$('city-results').replaceChildren();$$('b-direction').value=b?.direction||'N';
 }
 function edit(id){
+ formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;
  const b=state.batches.find(x=>x.id===id);if(!b)return;
  for(const k of ['length','width','thickness','quantity','separator','initial','target'])$$('b-'+k).value=b[k];
  $$('batch-id').value=b.id;$$('b-direction').value=b.direction||'N';locationChoice={...b.location};
@@ -117,7 +147,7 @@ async function ensureClimate(loc){
  const u='https://power.larc.nasa.gov/api/temporal/climatology/point?parameters=ALLSKY_SFC_SW_DWN,ALLSKY_SFC_SW_DIFF,T2M,RH2M&community=RE&latitude='+encodeURIComponent(loc.lat)+'&longitude='+encodeURIComponent(loc.lon)+'&format=JSON';
  const data=await fetchJSON(u),c={...loc,provider:'NASA POWER',parameter:data.properties?.parameter,period:data.header?.range||'Climatologia mensal',retrieved:new Date().toISOString()};
  if(!P.climateValid(c))throw Error('Dados incompletos');
- state.climates[loc.id]=c;save();if(generation===climateGeneration)$$('chosen-city').textContent=loc.name+' / '+loc.state+' · clima pronto';
+ state.climates[loc.id]=c;save();if(cloudReady&&cloudToken&&!canonical?.climates?.[loc.id])await changeCloud(()=>{});if(generation===climateGeneration)$$('chosen-city').textContent=loc.name+' / '+loc.state+' · clima pronto';
  render();return c;
  }catch(e){if(generation===climateGeneration)$$('chosen-city').textContent=loc.name+' / '+loc.state+' · clima temporariamente indisponível';render();return null;}
 }
@@ -147,13 +177,13 @@ $$('batch-form').onsubmit=async e=>{
  const b={species:'pinus_elliottii',id:old?.id||crypto.randomUUID(),name:old?.name||'Pinus · '+new Date().toLocaleDateString('pt-BR'),start:old?.start||localDate(Date.now()),created:old?.created||Date.now(),status:old?.status||'open',location:{...locationChoice},direction:$$('b-direction').value};
  for(const k of ['length','width','thickness','quantity','separator','initial','target'])b[k]=Number($$('b-'+k).value);
  const errors=M.validate(b);if(errors.length){say(errors[0]);return;}
- if(old)state.batches=state.batches.map(x=>x.id===b.id?b:x);else state.batches.push(b);
- state.selected=b.id;save();render();say('Fornada salva. Acompanhe o tempo no Painel.');go('painel');
- await ensureClimate(b.location);
+ if(await changeCloud(()=>{if(old)state.batches=state.batches.map(x=>x.id===b.id?b:x);else state.batches.push(b);state.selected=b.id;},formRevision)){
+ $$('batch-id').value=b.id;say('Fornada salva e compartilhada.');go('painel');await ensureClimate(b.location);
+ }
 };
 $$('start-new').onclick=()=>{resetForm();go('fornada');};
 $$('timer-edit').onclick=()=>{const b=active();if(b)edit(b.id);else{resetForm();go('fornada');}};
-$$('close-batch').onclick=()=>{const b=active();if(b){b.status='closed';save();render();}};
+$$('close-batch').onclick=async()=>{await changeCloud(()=>{const b=active();if(b)b.status='closed';});};
 function download(name,text){const u=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);}
 $$('export-simple').onclick=()=>download('minhas-cargas-estufa.json',JSON.stringify(state,null,2));
 $$('import-simple').onchange=async e=>{
@@ -164,7 +194,7 @@ $$('import-simple').onchange=async e=>{
  const newItems=s.batches.map(b=>({...b,id:crypto.randomUUID(),separator:b.separator??15,location:b.location||{id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon},direction:b.direction||'N'}));
  if(newItems.some(b=>M.validate(b).length||!b.location.name||!Number.isFinite(b.location.lat)||!Number.isFinite(b.location.lon)))throw Error('Alguma carga está incompleta.');
  for(const [key,c] of Object.entries(s.climates||{}))if(P.climateValid(c))state.climates[key]=c;
- state.batches.push(...newItems);state.selected=newItems[0]?.id||state.selected;save();render();say('Cópia importada. Seus cadastros anteriores foram mantidos.');
+ if(!await changeCloud(()=>{state.batches.push(...newItems);state.selected=newItems[0]?.id||state.selected;}))return;resetForm();say('Cópia importada e compartilhada. Seus cadastros anteriores foram mantidos.');
  const b=active();if(b)await ensureClimate(b.location);
  }catch(e){say('Não foi possível abrir a cópia: '+e.message);}
  e.target.value='';
@@ -184,3 +214,20 @@ live.refresh();
 save();resetForm();render();
 if(active())ensureClimate(active().location);
 setInterval(render,60000);
+
+$$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1';});
+$$('sync-login').onclick=()=>{if(cloudToken){cloudToken='';syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
+$$('sync-auth-cancel').onclick=()=>{$$('sync-password').value='';$$('sync-auth').close();};
+$$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
+ try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();}
+ catch(e){$$('sync-auth-message').textContent=e.status===401?'Senha incorreta.':e.status===503?'A edição ainda não foi configurada no receptor.':'Não foi possível liberar a edição. Tente novamente.';}
+ finally{$$('sync-auth-submit').disabled=false;}
+};
+$$('sync-auth').addEventListener('close',()=>{$$('sync-password').value='';});
+$$('sync-migrate').onclick=async()=>{if(cloud.revision!==0||canonical?.batches.length)return;
+ if(await changeCloud(()=>{state.batches=structuredClone(originalLocal.batches);state.selected=originalLocal.selected||originalLocal.batches[0]?.id||null;state.trash=structuredClone(originalLocal.trash||[]);state.climates={...state.climates,...originalLocal.climates};})){resetForm();go('painel');say('Cadastro deste aparelho publicado. Os outros aparelhos já podem consultá-lo.');}
+};
+window.addEventListener('online',refreshCloud);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCloud();});
+setInterval(()=>{if(!document.hidden&&!$$('sync-auth').open)refreshCloud();},15000);
+refreshCloud();
