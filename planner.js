@@ -42,9 +42,9 @@ function forecast(b,c,obs=[],now=Date.now(),environment={}){
  const optimistic=D.forecastFuture(history.mc,b,c,anchor,lowP,irradiation,environment.weather,history.last?.t);
  const conservative=D.forecastFuture(history.mc,b,c,anchor,highP,irradiation,environment.weather,history.last?.t);
  const central=D.forecastFuture(history.mc,b,c,anchor,parameters,irradiation,environment.weather,history.last?.t);
- if(optimistic.hours===null)return {...common,status:'conditions',message:'A meta não é alcançada em 180 dias no cenário atual. Revise as condições de secagem.'};
- const low=optimistic.days,high=conservative.days;
- return {...common,status:'forecast',low,high,central:central.days,anchor,earliest:anchor+optimistic.hours*D.HOUR,latest:conservative.hours===null?null:anchor+conservative.hours*D.HOUR,provisional:true,forecastSource:environment.weather?.size?'Meteorologia horária disponível; médias mensais fora da cobertura':'Cenário de médias mensais externas',message:'Estimativa pelo histórico do ar; cinética e vazões ainda não calibradas.'};
+ if(!Number.isFinite(optimistic.hours))return {...common,status:'conditions',message:'A meta não é alcançada em 180 dias no cenário atual. Revise as condições de secagem.'};
+ const low=Math.ceil(optimistic.hours/24),high=Number.isFinite(conservative.hours)?Math.ceil(conservative.hours/24):null;
+ return {...common,status:'forecast',low,high,central:Number.isFinite(central.hours)?Math.ceil(central.hours/24):null,anchor,earliest:anchor+optimistic.hours*D.HOUR,latest:Number.isFinite(conservative.hours)?anchor+conservative.hours*D.HOUR:null,provisional:true,forecastSource:environment.weather?.size?'Meteorologia horária disponível; médias mensais fora da cobertura':'Cenário de médias mensais externas',message:'Estimativa pelo histórico do ar; cinética e vazões ainda não calibradas.'};
 }
 const api={climateValid,irradiation,forecast};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EstufaPlanner=api;

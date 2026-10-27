@@ -107,9 +107,9 @@ function forecastFuture(mc,b,c,anchor,p,irradiation,weather,initialTemperature){
  const t=anchor+h*HOUR,met=weather?.get?.(Math.floor(t/HOUR));
  const ratioDay=met&&Number.isFinite(met.solar)?irradiation(c,t,b.direction||'N')/Math.max(.1,c.parameter.ALLSKY_SFC_SW_DWN[['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][new Date(t).getUTCMonth()]]):1;
  const solar=met&&Number.isFinite(met.solar)?met.solar*ratioDay:solarAt(c,t,b.direction||'N',irradiation);
- const r=futureHour(x,b,c,t,solar,p,weather,temperature);if(!r)return {hours:null,reason:'clima indisponível'};x=r.mc;temperature=r.t;
+ const r=futureHour(x,b,c,t,solar,p,weather,temperature);if(!r)return {hours:null,days:null,reason:'clima indisponível'};x=r.mc;temperature=r.t;
  if(x<=Number(b.target))return {hours:h+1,days:Math.ceil((h+1)/24)};
- }return {hours:null,reason:'meta não alcançada em 180 dias no cenário'};}
+ }return {hours:null,days:null,reason:'meta não alcançada em 180 dias no cenário'};}
 function fitCalibration(b,c,rows,wood,parameters,weather){
  const valid=woodReadings(wood,b,Date.now());if(valid.length<2)return null;const first=valid[0],last=valid.at(-1);if(last.epoch-first.epoch<6*HOUR||first.mc-last.mc<.5)return null;
  const fitBatch={...b,start:new Date(first.epoch-3*HOUR).toISOString().slice(0,16),initial:first.mc};
