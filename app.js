@@ -73,7 +73,7 @@ function drawTimer(b,r){
  meta.textContent=b.name+' · '+b.location.name+' · '+n(M.capacity(b).volume,4)+' m³';
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Esta fornada foi encerrada por você.';return;}
  if(r.status==='forecast'&&r.conditional){
- main.innerHTML='<span class="days-digits">Cerca de '+r.central+'</span><span class="days-unit">dias · estimativa condicional</span>';
+ main.innerHTML='<span class="days-digits">'+r.central+'</span><span class="days-unit">dias estimados</span>';
  sub.textContent=(r.approach==='observed-cycle'?'Referência: ciclo medido nas últimas 24 h, ajustado pela meteorologia. ':'Referência: modelo térmico provisório; ainda falta um ciclo completo medido. ')+'Chegada calculada: '+fmtDate(r.earliest)+'. Vale se o comportamento projetado se mantiver; não é garantia de prazo.';
  }else if(r.status==='forecast'){
  const upper=Number.isFinite(r.high)&&Number.isFinite(r.latest);
