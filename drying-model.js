@@ -1,4 +1,4 @@
-/* v0.6: observador higrotérmico reduzido. Todas as umidades em base seca.
+/* v0.7.2: observador higrotérmico reduzido. Todas as umidades em base seca.
    Coeficientes não medidos permanecem cenários explícitos, nunca precisão certificada. */
 (function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./model.js'):root.EstufaModel);if(typeof module==='object'&&module.exports)module.exports=api;else root.EstufaDrying=api;})(typeof globalThis==='object'?globalThis:this,function(M){
 'use strict';
@@ -25,7 +25,8 @@ function kinetics(mc,b,e,p){
  const hm=dv/length*Math.max(1,.664*Math.sqrt(re)*Math.cbrt(nu/dv));
  const h=clamp(woodRH,.5,99.5),dmdh=(emc(woodT,h+.1)-emc(woodT,h-.1))/.002;
  const rhoV=saturation(woodT)/(461.5*(woodT+273.15));
- const kfilm=hm*geo.surface*rhoV/(geo.dryMass*Math.max(.01,dmdh));
+ // dmdh está em pontos percentuais por fração de UR; M/100 é kg/kg.
+ const kfilm=100*hm*geo.surface*rhoV/(geo.dryMass*Math.max(.01,dmdh));
  const diff=p.diffusivity*Math.exp(-p.activation/8.314*(1/(woodT+273.15)-1/298.15))*(mc>p.fsp?p.freeMultiplier:1);
  const kdiff=Math.PI**2*diff/geo.thickness**2;
  const k=3600*p.rateScale/(1/kdiff+1/kfilm);
@@ -43,7 +44,10 @@ function step(mc,b,e,hours,p,previous){
   const ventCap=Math.max(0,q*rhoDry*(ratio(e.t,e.rh)-ratio(e.outT,e.outRH)))*hours;
   const stored=previous?Math.max(0,p.airVolume*(rhoDry*ratio(e.t,e.rh)-previous.rhoV)):0;
   if(heatCap<delta){delta=heatCap;limit='transferência de calor';}
-  if(ventCap+stored<delta){delta=ventCap+stored;limit='renovação/armazenamento no ar';}
+  // Com microclima imposto por leitura real, o fluxo da madeira é determinado
+  // pela condição de contorno. Q e umidade externa inferidos não são medições
+  // suficientes para impor um segundo limite: ventilação/condensação não estão identificadas.
+  if(e.observedBoundary!==true&&ventCap+stored<delta){delta=ventCap+stored;limit='renovação/armazenamento no ar';}
  }
  return {mc:Math.max(0,mc-delta/k.geo.dryMass*100),loss:Math.max(0,delta),gain:Math.max(0,-delta),eq:k.eq,limit,k:k.k,velocity:k.velocity,temperature:k.woodT};
 }
@@ -64,7 +68,7 @@ function integrate(b,c,rows,wood=[],options={}){
   while(left<right){
    const stop=Math.min(right,left+5*60000,wi<wr.length&&wr[wi].epoch>left?wr[wi].epoch:Infinity),mid=(left+stop)/2,f=(mid-a.epoch)/rawDt;
    const ext=outside(c,options.weather,mid);if(!Number.isFinite(ext.outT)||!Number.isFinite(ext.outRH)){left=stop;continue;}
-   const e={t:a.t+(z.t-a.t)*f,rh:a.rh+(z.rh-a.rh)*f,...ext,fans:typeof a.coolers==='boolean'?a.coolers:fanSchedule(mid),woodT:Number.isFinite(a.woodT)?a.woodT:undefined};
+   const e={t:a.t+(z.t-a.t)*f,rh:a.rh+(z.rh-a.rh)*f,...ext,observedBoundary:true,fans:typeof a.coolers==='boolean'?a.coolers:fanSchedule(mid),woodT:Number.isFinite(a.woodT)?a.woodT:undefined};
    const s=step(mc,b,e,(stop-left)/HOUR,p,last);if(!s.unusable){mc=s.mc;loss+=s.loss;gain+=s.gain;covered+=stop-left;last={...e,eq:s.eq,limit:s.limit,epoch:stop,rhoV:(101325-e.rh/100*saturation(e.t))/(287.05*(e.t+273.15))*ratio(e.t,e.rh)};
     const day=new Date(mid-3*HOUR).toISOString().slice(0,10);days[day]??={loss:0,gain:0,hours:0};days[day].loss+=s.loss;days[day].gain+=s.gain;days[day].hours+=(stop-left)/HOUR;
    }left=stop;
@@ -110,6 +114,50 @@ function forecastFuture(mc,b,c,anchor,p,irradiation,weather,initialTemperature){
  const r=futureHour(x,b,c,t,solar,p,weather,temperature);if(!r)return {hours:null,days:null,reason:'clima indisponível'};x=r.mc;temperature=r.t;
  if(x<=Number(b.target))return {hours:h+1,days:Math.ceil((h+1)/24)};
  }return {hours:null,days:null,reason:'meta não alcançada em 180 dias no cenário'};}
+
+// Projeção condicional: o microclima de um ciclo real é a referência, sem
+// empilhar multiplicadores arbitrários de difusão, cobertura e ventilação.
+function observedCycle(rows,c,weather,anchor,irradiation){
+ const start=anchor-DAY,air=normalize(rows,anchor),bins=Array.from({length:24},()=>({ms:0,t:0,w:0,outT:0,outW:0,solar:0}));
+ const failures=(rows||[]).filter(r=>r.valid===false&&Number.isFinite(r.epoch)).map(r=>r.epoch);
+ let covered=0;
+ for(let i=0;i<air.length-1;i++){
+  const a=air[i],z=air[i+1],dt=z.epoch-a.epoch;
+  if(dt<=0||dt>MAX_GAP||z.epoch<=start||a.epoch>=anchor||failures.some(t=>t>a.epoch&&t<z.epoch))continue;
+  let left=Math.max(start,a.epoch),end=Math.min(anchor,z.epoch);
+  while(left<end){const stop=Math.min(end,(Math.floor(left/HOUR)+1)*HOUR),mid=(left+stop)/2,f=(mid-a.epoch)/dt;
+   const t=a.t+(z.t-a.t)*f,rh=a.rh+(z.rh-a.rh)*f,ext=outside(c,weather,mid);if(!Number.isFinite(ext.outT)||!Number.isFinite(ext.outRH)){left=stop;continue;}
+   const met=weather?.get?.(Math.floor(mid/HOUR)),solar=met&&Number.isFinite(met.solar)?met.solar:(()=>{const month=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][new Date(mid).getUTCMonth()];const ratio=irradiation(c,mid,'N')/Math.max(.1,c.parameter.ALLSKY_SFC_SW_DWN[month]);return solarAt(c,mid,'N',irradiation)/Math.max(.1,ratio);})(),ms=stop-left,hour=new Date(mid-3*HOUR).getUTCHours(),b=bins[hour];
+   b.ms+=ms;b.t+=t*ms;b.w+=ratio(t,rh)*ms;b.outT+=ext.outT*ms;b.outW+=ratio(ext.outT,ext.outRH)*ms;b.solar+=solar*ms;covered+=ms;left=stop;
+  }
+ }
+ const coverage=covered/DAY;
+ if(coverage<.9||bins.some(b=>b.ms<40*60000))return {valid:false,coverage,hours:covered/HOUR,reason:'Falta um ciclo diário com cobertura suficiente.'};
+ return {valid:true,coverage,hours:covered/HOUR,start,end:anchor,bins:bins.map(b=>({t:b.t/b.ms,w:b.w/b.ms,outT:b.outT/b.ms,outW:b.outW/b.ms,solar:b.solar/b.ms}))};
+}
+function forecastObserved(mc,b,c,anchor,p,irradiation,weather,cycle){
+ if(!cycle?.valid)return {hours:null,days:null,reason:'ciclo incompleto'};
+ if(mc<=Number(b.target))return {hours:0,days:0};
+ let x=mc;
+ for(let h=0;h<24*180;h++){
+  const epoch=anchor+(h+.5)*HOUR,hour=new Date(epoch-3*HOUR).getUTCHours(),base=cycle.bins[hour],ext=outside(c,weather,epoch);
+  if(!Number.isFinite(ext.outT)||!Number.isFinite(ext.outRH))return {hours:null,days:null,reason:'clima indisponível'};
+  const met=weather?.get?.(Math.floor(epoch/HOUR));
+  // Ambos os valores são no plano horizontal; o fator diário transpõe só a diferença.
+  const month=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][new Date(epoch).getUTCMonth()];
+  const tiltRatio=irradiation(c,epoch,b.direction||'N')/Math.max(.1,c.parameter.ALLSKY_SFC_SW_DWN[month]);
+  const futureSolar=met&&Number.isFinite(met.solar)?met.solar:solarAt(c,epoch,b.direction||'N',irradiation)/Math.max(.1,tiltRatio);
+  const q=exchange(base.t,base.outT,p),loss=p.ua+1.2*1005*q/3600;
+  const solarChange=(futureSolar-base.solar)*tiltRatio*M.C.area*p.solarFactor/loss;
+  const t=clamp(base.t+(ext.outT-base.outT)+solarChange,0,80);
+  const w=Math.max(0,base.w+ratio(ext.outT,ext.outRH)-base.outW),rh=rhFromRatio(t,w);
+  const e={t,rh,...ext,observedBoundary:true,fans:fanSchedule(epoch)};
+  const next=step(x,b,e,1,p);if(next.unusable)return {hours:null,days:null,reason:'condições fora do modelo'};
+  x=next.mc;
+  if(x<=Number(b.target))return {hours:h+1,days:Math.ceil((h+1)/24)};
+ }
+ return {hours:null,days:null,reason:'As condições projetadas não permitem atingir a meta no horizonte de cálculo.'};
+}
 function fitCalibration(b,c,rows,wood,parameters,weather){
  const valid=woodReadings(wood,b,Date.now());if(valid.length<2)return null;const first=valid[0],last=valid.at(-1);if(last.epoch-first.epoch<6*HOUR||first.mc-last.mc<.5)return null;
  const fitBatch={...b,start:new Date(first.epoch-3*HOUR).toISOString().slice(0,16),initial:first.mc};
@@ -119,5 +167,5 @@ function fitCalibration(b,c,rows,wood,parameters,weather){
  for(let i=0;i<22;i++){const mid=(lo+hi)/2;if(predict(mid)>last.mc)lo=mid;else hi=mid;}
  return {valid:true,rateScale:(lo+hi)/2,count:valid.length,start:first.epoch,end:last.epoch,scope:'ajuste na carga observada; não valida outras cargas'};
 }
-return {DEFAULTS,bounds,params,emc,saturation,ratio,rhFromRatio,wetBulb,kinetics,step,exchange,geometry,normalize,integrate,forecastFuture,fitCalibration,fanSchedule,DAY,HOUR,MAX_GAP};
+return {DEFAULTS,bounds,params,emc,saturation,ratio,rhFromRatio,wetBulb,kinetics,step,exchange,geometry,normalize,integrate,forecastFuture,observedCycle,forecastObserved,fitCalibration,fanSchedule,DAY,HOUR,MAX_GAP};
 });

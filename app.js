@@ -72,7 +72,10 @@ function drawTimer(b,r){
  if(!b){main.textContent='--';sub.textContent='Cadastre a madeira para começar.';meta.textContent='Pinus elliottii · sua estufa, no seu ritmo';return;}
  meta.textContent=b.name+' · '+b.location.name+' · '+n(M.capacity(b).volume,4)+' m³';
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Esta fornada foi encerrada por você.';return;}
- if(r.status==='forecast'){
+ if(r.status==='forecast'&&r.conditional){
+ main.innerHTML='<span class="days-digits">Cerca de '+r.central+'</span><span class="days-unit">dias · estimativa condicional</span>';
+ sub.textContent=(r.approach==='observed-cycle'?'Referência: ciclo medido nas últimas 24 h, ajustado pela meteorologia. ':'Referência: modelo térmico provisório; ainda falta um ciclo completo medido. ')+'Chegada calculada: '+fmtDate(r.earliest)+'. Vale se o comportamento projetado se mantiver; não é garantia de prazo.';
+ }else if(r.status==='forecast'){
  const upper=Number.isFinite(r.high)&&Number.isFinite(r.latest);
  main.innerHTML='<span class="days-digits">'+r.low+(!upper?' ou mais':r.low===r.high?'':'–'+r.high)+'</span><span class="days-unit">dias estimados</span>';
  sub.textContent='Calculado a partir de '+new Date(r.anchor).toLocaleString('pt-BR')+'. '+(!upper?'O cenário conservador não alcança a meta em 180 dias.':'Janela: '+fmtDate(r.earliest)+' a '+fmtDate(r.latest)+'.')+' Parâmetros de secagem provisórios.';
