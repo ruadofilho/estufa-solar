@@ -20,31 +20,31 @@ function irradiation(c,epoch,direction){
  const h=(ghi-dhi)*ratio+dhi*(1+Math.cos(b))/2+.2*ghi*(1-Math.cos(b))/2;
  cache.set(key,h);return h;
 }
-function forecast(b,c,obs=[],now=Date.now()){
+function forecast(b,c,obs=[],now=Date.now(),environment={}){
  const errors=M.validate(b);if(errors.length)return {status:'invalid',message:errors[0]};
- const cap=M.capacity(b);if(!cap.fits)return {status:'capacity',cap,message:'Ajuste a quantidade ou os separadores.'};
- if(!climateValid(c))return {status:'climate',cap,message:'Aguardando os dados climáticos deste local.'};
- const start=Date.parse(b.start+'-03:00');
- const valid=obs.filter(o=>o.batch===b.id&&o.source==='device'&&o.valid===true&&Number.isFinite(o.mc)&&o.mc>=7&&o.mc<=18&&o.epoch>=start&&o.epoch<=now).sort((a,b)=>a.epoch-b.epoch);
- const last=valid.at(-1),fresh=last&&now-last.epoch<=15*60000;
- const current=last?last.mc:Number(b.initial),reference=last?last.epoch:start;
- if(fresh&&current<=Number(b.target))return {status:'target',cap,current,message:'A amostra atingiu a meta.'};
- if(last&&current<=Number(b.target)&&!fresh)return {status:'stale',cap,message:'Aguardando uma leitura recente.'};
- const mass=cap.volume*M.C.density,water=Math.max(0,mass*(current-Number(b.target))/100),energy=water*M.C.latent;
- const g=.82,eff=.25; // Pendentes da ficha da chapa e ajuste por dados reais.
- function project(mult){
-  let remaining=energy,days=0;
-  for(let i=0;i<730;i++){
-   const daily=irradiation(c,reference+i*DAY,b.direction||'N')*M.C.area*g*eff*mult;
-   if(daily>0&&remaining<=daily)return reference+(days+remaining/daily)*DAY;
-   remaining-=daily;days++;
-  }return null;
- }
- const earliest=project(1.5),latest=project(.5);
- if(earliest===null||latest===null)return {status:'pending',cap,message:'Energia insuficiente para estimar o prazo.'};
- if(now>latest)return {status:'overdue',cap,earliest,latest,message:'A previsão precisa de novas leituras.'};
- const low=Math.max(0,Math.ceil((earliest-now)/DAY)),high=Math.max(0,Math.ceil((latest-now)/DAY));
- return {status:'forecast',cap,water,energy,earliest,latest,low,high,current,reference,fresh:!!fresh,progress:last?Math.min(100,Math.max(0,(Number(b.initial)-current)/(Number(b.initial)-Number(b.target))*100)):0,initial:!last};
+ const cap=M.capacity(b);if(!cap.fits)return {status:'capacity',cap,message:'Revise o empilhamento e os separadores.'};
+ if(!climateValid(c))return {status:'climate',cap,message:'Aguardando clima do local.'};
+ const D=typeof module!=='undefined'&&module.exports?require('./drying-model.js'):root.EstufaDrying;
+ let parameters;try{parameters=D.params(b.dryingParameters||{});}catch(e){return {status:'invalid',message:e.message};}
+ const history=D.integrate(b,c,environment.air||[],obs,{now,parameters,weather:environment.weather});
+ const measurement=history.wood;
+ const freshWood=measurement&&now-measurement.epoch<=15*60000;
+ if(freshWood&&measurement.mc<=Number(b.target))return {status:'target',cap,current:measurement.mc,history,message:'Amostra medida na meta; conferir o restante da carga.'};
+ const geo=D.geometry(b,parameters),common={cap,history,current:history.mc,water:Math.max(0,geo.dryMass*(history.mc-Number(b.target))/100),energy:Math.max(0,geo.dryMass*(history.mc-Number(b.target))/100)*M.C.latent,initial:!measurement,fresh:!!freshWood,progress:Math.max(0,Math.min(100,(Number(b.initial)-history.mc)/(Number(b.initial)-Number(b.target))*100))};
+ const start=Date.parse(b.start+'-03:00'),last=history.air.at(-1);
+ if(now-start>15*60000&&history.coverage<.9)return {...common,status:'history',message:'Histórico cobre '+Math.round(history.coverage*100)+'% desde a referência. Prazo suspenso nas lacunas.'};
+ if(now-start>15*60000&&(!last||now-last.epoch>5*60000))return {...common,status:'stale',message:'Sem leitura recente do ar. Estimativa parada na última amostra.'};
+ if(history.mc<=Number(b.target))return {...common,status:'estimatedTarget',message:'Meta estimada pelo modelo; confirmar na madeira.'};
+ // O relógio é ancorado nos dados, não reduz horas com o mero passar do calendário.
+ const anchor=Math.max(start,last?.epoch??start,measurement?.epoch??start);
+ const lowP={...parameters,diffusivity:parameters.diffusivity*2,solarFactor:Math.min(.95,parameters.solarFactor*1.49),circulation:Math.min(1000,parameters.circulation*2)};
+ const highP={...parameters,diffusivity:parameters.diffusivity*.5,solarFactor:Math.max(.1,parameters.solarFactor*.436),circulation:parameters.circulation*.5};
+ const optimistic=D.forecastFuture(history.mc,b,c,anchor,lowP,irradiation,environment.weather,history.last?.t);
+ const conservative=D.forecastFuture(history.mc,b,c,anchor,highP,irradiation,environment.weather,history.last?.t);
+ const central=D.forecastFuture(history.mc,b,c,anchor,parameters,irradiation,environment.weather,history.last?.t);
+ if(optimistic.hours===null)return {...common,status:'conditions',message:'A meta não é alcançada em 180 dias no cenário atual. Revise as condições de secagem.'};
+ const low=optimistic.days,high=conservative.days;
+ return {...common,status:'forecast',low,high,central:central.days,anchor,earliest:anchor+optimistic.hours*D.HOUR,latest:conservative.hours===null?null:anchor+conservative.hours*D.HOUR,provisional:true,forecastSource:environment.weather?.size?'Meteorologia horária disponível; médias mensais fora da cobertura':'Cenário de médias mensais externas',message:'Estimativa pelo histórico do ar; cinética e vazões ainda não calibradas.'};
 }
 const api={climateValid,irradiation,forecast};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EstufaPlanner=api;

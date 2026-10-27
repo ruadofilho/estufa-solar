@@ -7,7 +7,8 @@ const fmtDate=t=>new Date(t).toLocaleDateString('pt-BR',{timeZone:'America/Sao_P
 const seed=window.EstufaClimateSeed;
 function go(name){abrir(name);history.replaceState(null,'','#'+name);}
 let state={version:2,batches:[],selected:null,observations:[],climates:{[seed.id]:seed},telemetry:null},storageOK=true,locationChoice={id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon};
-let climateGeneration=0,formMode='selected';
+let physicalRevision=0,physicalDirty=false,physicalBatch=null;
+let climateGeneration=0,formMode='selected',processData={air:[],weather:new Map(),loading:false},lastProcessBatch='',modelResult=null;
 try{
  const raw=localStorage.getItem(KEY);
  if(raw){const s=JSON.parse(raw);if(s.version===2&&Array.isArray(s.batches)){state={...state,...s,climates:{...s.climates,[seed.id]:seed}};state.batches=state.batches.filter(b=>!M.validate(b).length);}}
@@ -24,11 +25,17 @@ try{const backup=JSON.parse(localStorage.getItem('estufa-local-antes-sync-v1')||
 try{if(state.batches.length&&!localStorage.getItem('estufa-local-antes-sync-v1'))localStorage.setItem('estufa-local-antes-sync-v1',JSON.stringify(state));}catch{}
 const cloud=window.FornadasShared.create();
 let cloudReady=false,cloudBusy=false,cloudToken='',formRevision=0,syncStatus='Buscando a fornada compartilhada…',canonical=null,readBusy=false;
-function cloudDocument(d){state.batches=structuredClone(d.batches);state.selected=d.selected;state.trash=structuredClone(d.trash);state.climates={...state.climates,...d.climates};state.observations=[];}
+function cloudDocument(d){
+ const retained=(state.observations||[]).filter(o=>o.source==='device');
+ state.batches=structuredClone(d.batches);state.selected=d.selected;state.trash=structuredClone(d.trash);state.climates={...state.climates,...d.climates};
+ const ids=new Set(state.batches.map(b=>b.id));
+ state.observations=retained.filter(o=>ids.has(o.batch));
+ for(const b of state.batches)for(const r of b.referenceReadings||[])if(r.source==='manual'&&r.valid===true&&r.calibrated===true&&Number.isFinite(r.mc)&&Number.isFinite(r.epoch))state.observations.push({...r,batch:b.id});
+}
 async function refreshCloud(){
  if(readBusy||cloudBusy)return;readBusy=true;
  try{const d=await cloud.load();const changed=!cloudReady||JSON.stringify(canonical)!==JSON.stringify(d.documento);canonical=structuredClone(d.documento);cloudReady=true;
-  if(changed){cloudDocument(d.documento);save();if(!$$('batch-form').dataset.dirty){resetForm(formMode==='new');formRevision=cloud.revision;}const b=active();if(b)ensureClimate(b.location);}
+  if(changed){cloudDocument(d.documento);save();if(!$$('batch-form').dataset.dirty){resetForm(formMode==='new');formRevision=cloud.revision;}const b=active();if(b){ensureClimate(b.location);if(lastProcessBatch!==b.id)refreshProcess();}}
   syncStatus=cloudToken?'Fornada sincronizada · edição liberada neste aparelho.':'Fornada sincronizada · igual nos seus aparelhos.';render();
  }catch{syncStatus='Sem acesso às fornadas compartilhadas. O cadastro local foi preservado; edição bloqueada até reconectar.';cloudReady=false;render();}
  finally{readBusy=false;render();}
@@ -37,7 +44,7 @@ async function changeCloud(action,expected=cloud.revision){
  if(!cloudReady||!cloudToken||cloudBusy||readBusy){say('Libere a edição e aguarde a sincronização antes de salvar.');return false;}
  if(expected!==cloud.revision){say('A fornada mudou em outro aparelho. Reabra Editar antes de salvar; seus campos atuais foram mantidos.');return false;}
  cloudBusy=true;syncStatus='Salvando nos seus aparelhos…';render();
- try{action();const d=await cloud.save(window.FornadasShared.pick(state),cloudToken);canonical=structuredClone(d.documento);cloudDocument(d.documento);save();formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;syncStatus='Salvo na nuvem · os demais aparelhos atualizam em até 15 segundos.';return true;}
+ try{action();const d=await cloud.save(window.FornadasShared.pick(state),cloudToken);canonical=structuredClone(d.documento);cloudDocument(d.documento);save();if(active()&&lastProcessBatch!==active().id)refreshProcess();formRevision=cloud.revision;delete $$('batch-form').dataset.dirty;physicalDirty=false;physicalRevision=cloud.revision;syncStatus='Salvo na nuvem · os demais aparelhos atualizam em até 15 segundos.';return true;}
  catch(e){if(canonical)cloudDocument(canonical);if(e.status===401)cloudToken='';syncStatus=e.status===409?'Outra edição chegou primeiro. Reabra a fornada para conferir.':'Não foi possível salvar na nuvem. A alteração não foi aplicada.';say(syncStatus);return false;}
  finally{cloudBusy=false;render();}
 }
@@ -48,8 +55,10 @@ function syncControls(){
  $$('sync-migrate').disabled=!can;
  for(const id of ['start-new','close-batch','undo-delete','import-simple'])$$ (id).disabled=!can||(id==='close-batch'&&(!active()||active().status==='closed'));
  for(const el of $$('batch-form').querySelectorAll('input,select,button'))el.disabled=!can;
+ for(const el of $$('physical-parameters').querySelectorAll('input,button'))el.disabled=!can||formMode==='new'||!active();
  $$('backup-status').textContent='Fornadas guardadas na nuvem. Exportar uma cópia continua disponível.';
  for(const el of document.querySelectorAll('[data-pick],[data-edit],[data-delete]'))el.disabled=!can;
+ if(!can&&$$('process-status'))$$('process-status').dataset.readonly='1';
 }
 function active(){return state.batches.find(b=>b.id===state.selected);}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){storageOK=false;}}
@@ -64,19 +73,21 @@ function drawTimer(b,r){
  meta.textContent=b.name+' · '+b.location.name+' · '+n(M.capacity(b).volume,4)+' m³';
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Esta fornada foi encerrada por você.';return;}
  if(r.status==='forecast'){
- main.innerHTML='<span class="days-digits">'+(r.high===0?'Hoje':r.low===r.high?r.high:r.low+'–'+r.high)+'</span><span class="days-unit">'+(r.high===0?'estimativa':r.high===1?'dia estimado':'dias estimados')+'</span>';
- sub.textContent='Janela prevista: '+fmtDate(r.earliest)+' a '+fmtDate(r.latest)+'. '+(r.initial?'Previsão inicial.':'Atualizada pela amostra.');
- }else if(r.status==='target'){main.textContent='Meta atingida';sub.textContent='A amostra atingiu a meta. Confira as demais tábuas.';}
+ main.innerHTML='<span class="days-digits">'+r.low+(r.high===null?' ou mais':r.low===r.high?'':'–'+r.high)+'</span><span class="days-unit">dias estimados</span>';
+ sub.textContent='Calculado a partir de '+new Date(r.anchor).toLocaleString('pt-BR')+'. '+(r.high===null?'O cenário conservador não alcança a meta em 180 dias.':'Janela: '+fmtDate(r.earliest)+' a '+fmtDate(r.latest)+'.')+' Parâmetros de secagem provisórios.';
+ }else if(r.status==='target'){main.textContent='Amostra na meta';sub.textContent=r.message;}
+ else if(r.status==='estimatedTarget'){main.textContent='Conferir a madeira';sub.textContent=r.message;}
  else if(r.status==='capacity'){main.textContent='Revisar carga';sub.textContent=r.message;}
  else if(r.status==='climate'){main.textContent='Buscando clima';sub.textContent=r.message;}
- else {main.textContent='Em atualização';sub.textContent=r.message||'Aguardando dados para calcular.';}
+ else {main.textContent=r.status==='history'?'Histórico incompleto':r.status==='stale'?'Sem atualização':r.status==='conditions'?'Rever condições':'Em atualização';sub.textContent=r.message||'Aguardando dados para calcular.';}
+
 }
 function render(){
  const b=active(),t=state.telemetry;
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
- $$('wood-temperature').textContent='--';$$('wood-moisture').textContent='--';
- $$('wood-status').textContent='Sonda de umidade a instalar';
+ $$('wood-temperature').textContent=t?.woodTempValid?n(t.woodTemp):'--';$$('wood-moisture').textContent=t?.woodValid?n(t.woodMC):'--';
+ $$('wood-status').textContent=t?.woodValid?'Leitura da sonda calibrada':'Sem leitura direta da madeira; veja a estimativa abaixo.';
  $$('badge').className='badge';$$('conexao').textContent=fresh?'ESTUFA CONECTADA':t?.status==='stale'?'LEITURA ANTIGA':t?.status==='loading'?'CONECTANDO':'SEM CONEXÃO';
  $$('modo').textContent=fresh?(t.test?'Teste':'Automático · 09h–18h'):'--';
  $$('hora-dispositivo').textContent=fresh?stamp(t.epoch*1000):'Aguardando leitura atual';
@@ -90,7 +101,7 @@ function render(){
  syncControls();
  if(!cloudReady){$$('time-main').textContent='--';$$('time-caption').textContent='Aguardando a fornada compartilhada.';$$('time-meta').textContent='Os dados deste aparelho estão preservados.';$$('load-summary').textContent='';return;}
  if(!b){drawTimer(null,null);$$('load-summary').textContent='Cadastre sua fornada na aba Fornada.';$$('batch-check').textContent='';$$('climate-note').textContent='O clima será escolhido automaticamente pelo local.';return;}
- const c=climateFor(b),r=P.forecast(b,c,[],cloud.serverNow());
+ const c=climateFor(b),r=P.forecast(b,c,state.observations,cloud.serverNow()??Date.now(),processData);modelResult=r;renderProcess(b,r);
  drawTimer(b,r);
  $$('load-summary').textContent=b.quantity+' tábuas de '+b.length+' × '+b.width+' × '+b.thickness+' mm · separadores de '+b.separator+' mm · início '+fmtDate(Date.parse(b.start+'-03:00'));
  const cap=M.capacity(b);
@@ -107,7 +118,7 @@ function renderFornadaHistory(){
  const date=new Date(Date.parse(v.start+'-03:00')).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'2-digit'});
  return '<tr'+(v.id===state.selected?' class="selected-fornada"':'')+'><td>'+esc(date)+'</td><td class="fornada-name" title="'+esc(v.name)+'">'+esc(v.name)+'</td><td class="fornada-place">'+esc(v.location.name)+'</td><td>'+v.quantity+' · '+n(M.capacity(v).volume,4)+' m³</td><td>'+n(Number(v.target))+'%</td><td>'+(v.status==='closed'?'Encerrada':'Em andamento')+'</td><td class="fornada-actions"><button type="button" data-pick="'+esc(v.id)+'" aria-label="Ver '+esc(v.name)+' no painel">Ver</button><button type="button" data-edit="'+esc(v.id)+'" aria-label="Editar '+esc(v.name)+'">Editar</button><button type="button" data-delete="'+esc(v.id)+'" aria-label="Excluir '+esc(v.name)+'">Excluir</button></td></tr>';
  }).join(''):'<tr><td colspan="7" class="history-empty">Nenhuma fornada no histórico.</td></tr>';
- for(const x of document.querySelectorAll('[data-pick]'))x.onclick=async()=>{if(await changeCloud(()=>{state.selected=x.dataset.pick;})){resetForm();go('painel');}};
+ for(const x of document.querySelectorAll('[data-pick]'))x.onclick=async()=>{if(await changeCloud(()=>{state.selected=x.dataset.pick;})){resetForm();refreshProcess();go('painel');}};
  for(const x of document.querySelectorAll('[data-edit]'))x.onclick=()=>edit(x.dataset.edit);
  for(const x of document.querySelectorAll('[data-delete]'))x.onclick=async()=>{
  const id=x.dataset.delete,editing=$$('batch-id').value===id;let removed;
@@ -178,11 +189,11 @@ $$('batch-form').onsubmit=async e=>{
  const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
  if(normalize($$('city-query').value)!==normalize(locationChoice.name)){say('Clique em Buscar cidade e confirme o local antes de salvar.');return;}
  const old=state.batches.find(x=>x.id===$$('batch-id').value);
- const b={species:'pinus_elliottii',id:old?.id||crypto.randomUUID(),name:old?.name||'Pinus · '+new Date().toLocaleDateString('pt-BR'),start:old?.start||localDate(Date.now()),created:old?.created||Date.now(),status:old?.status||'open',location:{...locationChoice},direction:$$('b-direction').value};
+ const b={...(old||{}),species:'pinus_elliottii',id:old?.id||crypto.randomUUID(),name:old?.name||'Pinus · '+new Date().toLocaleDateString('pt-BR'),start:old?.start||localDate(cloud.serverNow()??Date.now()),created:old?.created||(cloud.serverNow()??Date.now()),status:old?.status||'open',location:{...locationChoice},direction:$$('b-direction').value};
  for(const k of ['length','width','thickness','quantity','separator','initial','target'])b[k]=Number($$('b-'+k).value);
  const errors=M.validate(b);if(errors.length){say(errors[0]);return;}
  if(await changeCloud(()=>{if(old)state.batches=state.batches.map(x=>x.id===b.id?b:x);else state.batches.push(b);state.selected=b.id;},formRevision)){
- resetForm();say('Fornada salva e compartilhada.');go('painel');await ensureClimate(b.location);
+ resetForm();refreshProcess();say('Fornada salva e compartilhada.');go('painel');await ensureClimate(b.location);
  }
 };
 $$('start-new').onclick=()=>{resetForm(true);go('fornada');};
@@ -198,29 +209,61 @@ $$('import-simple').onchange=async e=>{
  const newItems=s.batches.map(b=>({...b,id:crypto.randomUUID(),separator:b.separator??15,location:b.location||{id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon},direction:b.direction||'N'}));
  if(newItems.some(b=>M.validate(b).length||!b.location.name||!Number.isFinite(b.location.lat)||!Number.isFinite(b.location.lon)))throw Error('Alguma carga está incompleta.');
  for(const [key,c] of Object.entries(s.climates||{}))if(P.climateValid(c))state.climates[key]=c;
- if(!await changeCloud(()=>{state.batches.push(...newItems);state.selected=newItems[0]?.id||state.selected;}))return;resetForm();say('Cópia importada e compartilhada. Seus cadastros anteriores foram mantidos.');
+ if(!await changeCloud(()=>{state.batches.push(...newItems);state.selected=newItems[0]?.id||state.selected;}))return;resetForm();refreshProcess();say('Cópia importada e compartilhada. Seus cadastros anteriores foram mantidos.');
  const b=active();if(b)await ensureClimate(b.location);
  }catch(e){say('Não foi possível abrir a cópia: '+e.message);}
  e.target.value='';
 };
+
+function renderProcess(b,r){
+ const h=r.history,el=id=>document.getElementById(id);
+ el('estimated-mc').textContent=h?n(h.mc)+'%':'--';
+ el('estimated-water').textContent=h?n(h.netLoss,3)+' kg':'--';
+ el('equilibrium-mc').textContent=h?.last?n(h.last.eq)+'%':'--';
+ const today=new Date(Date.now()-10800000).toISOString().slice(0,10),daily=h?.days?.[today];
+ el('daily-water').textContent=daily?n(daily.loss-daily.gain,3)+' kg':'--';
+ el('process-coverage').textContent=h?'Histórico usado: '+n(h.coveredHours,1)+' h de '+n(h.elapsedHours,1)+' h da carga. Cobertura desde a última referência: '+n(h.coverage*100,0)+'%. '+(h.anchor?'Referência: medição da madeira.':'Referência: umidade inicial informada.'):'Cadastre uma fornada.';
+ el('process-source').textContent=(processData.loading?'Carregando histórico completo… ':'')+(processData.error||'')+' '+(processData.weatherError||'')+' '+(r.forecastSource||'');
+ el('time-remaining').querySelector('.clock-actions small').textContent=h?.coveredHours?'Estimativa pelo histórico medido; confirme a meta na madeira.':'Cenário inicial sem histórico integrado; parâmetros provisórios.';
+ el('process-status').textContent=h?'Umidade e água são estimativas do modelo nos intervalos cobertos. Água acumulada negativa indica reumidificação líquida. '+(b.calibration?'Coeficiente ajustado nesta carga; ainda requer verificação independente.':'Cinética e vazões provisórias; ajuste com medições de referência.'):'Aguardando dados.';
+ const observed=h?.last;el('process-limit').textContent=observed?'Limitante na última integração: '+observed.limit+'.':'Aguardando pares de leituras para integrar a perda de água.';
+ const tbody=el('daily-process');tbody.innerHTML=h?Object.entries(h.days).sort().slice(-30).map(([day,v])=>'<tr><td>'+esc(day)+'</td><td>'+n(v.hours,1)+'</td><td>'+n(v.loss,3)+'</td><td>'+n(v.gain,3)+'</td><td>'+n(v.loss-v.gain,3)+'</td></tr>').join(''):'';
+ if(!tbody.innerHTML)tbody.innerHTML='<tr><td colspan="5">Sem intervalos de medição disponíveis.</td></tr>';
+ el('wood-reading-time').value ||= localDate(Date.now());
+ if(physicalDirty&&physicalBatch===b.id)return;
+ physicalBatch=b.id;physicalDirty=false;physicalRevision=cloud.revision;
+ const parameters=window.EstufaDrying.params(b.dryingParameters||{});
+ for(const input of document.querySelectorAll('[data-physical]'))input.value=parameters[input.dataset.physical];
+}
+function refreshProcess(){const b=active();if(b){lastProcessBatch=b.id;processFeed.load(b);}}
+const processFeed=window.EstufaProcess.create(data=>{processData=data;render();},fetch,( )=>cloud.serverNow()??Date.now());
+window.addEventListener('process-csv-import',e=>processFeed.importRows(e.detail||[]));
+document.getElementById('process-refresh').onclick=refreshProcess;
+document.getElementById('physical-parameters').addEventListener('input',()=>{physicalDirty=true;physicalBatch=active()?.id;});
+document.getElementById('save-physical').onclick=async()=>{const b=active();if(!b)return;try{const values={...(b.dryingParameters||{})};for(const input of document.querySelectorAll('[data-physical]')){if(!input.value.trim())throw Error('Preencha todos os parâmetros.');values[input.dataset.physical]=Number(input.value);}window.EstufaDrying.params(values);if(await changeCloud(()=>{const current=state.batches.find(x=>x.id===b.id);current.dryingParameters=values;current.calibration=null;},physicalRevision))document.getElementById('calibration-message').textContent='Parâmetros salvos e sincronizados para esta fornada.';}catch(e){document.getElementById('calibration-message').textContent=e.message;}};
+document.getElementById('save-wood-reading').onclick=async()=>{const b=active();if(!b)return;const mc=Number(document.getElementById('wood-reading').value),epoch=Date.parse(document.getElementById('wood-reading-time').value+'-03:00');if(!Number.isFinite(mc)||mc<1||mc>200||!Number.isFinite(epoch)||epoch<Date.parse(b.start+'-03:00')||epoch>(cloud.serverNow()??Date.now())){document.getElementById('calibration-message').textContent='Confira a leitura e a data dentro desta fornada.';return;}const reading={source:'manual',calibrated:true,valid:true,mc,epoch};if(await changeCloud(()=>{const current=state.batches.find(x=>x.id===b.id);current.referenceReadings=[...(current.referenceReadings||[]).filter(x=>x.epoch!==epoch),reading];},physicalRevision))document.getElementById('calibration-message').textContent='Medição de referência registrada e compartilhada.';};
+document.getElementById('fit-model').onclick=async()=>{const b=active();if(!b)return;const r=window.EstufaDrying.fitCalibration(b,climateFor(b),processData.air,state.observations,b.dryingParameters||{},processData.weather);if(!r?.valid){document.getElementById('calibration-message').textContent=r?.message||'São necessárias duas medições válidas, 6 h de intervalo, queda de 0,5 ponto e 90% de cobertura de ar.';return;}if(await changeCloud(()=>{const current=state.batches.find(x=>x.id===b.id);current.dryingParameters={...(current.dryingParameters||{}),rateScale:r.rateScale};current.calibration=r;},physicalRevision))document.getElementById('calibration-message').textContent='Cinética ajustada e compartilhada. Confira com medição independente.';};
 // Somente leituras GET. A página não envia comandos à ESP32.
 state.telemetry=null;
 let liveSignature='';
 const live=window.EstufaLive.create(t=>{
  const signature=JSON.stringify({...t,age:undefined});state.telemetry=t;
+ if(typeof processFeed!=='undefined'&&t.status==='online'&&t.airValid){processFeed.addLive(t);const b=active();if(b&&t.woodValid&&t.woodBatch===b.id&&!state.observations.some(o=>o.source==='device'&&o.epoch===t.epoch*1000&&o.batch===b.id)){state.observations.push({batch:b.id,epoch:t.epoch*1000,source:'device',valid:true,calibrated:true,mc:t.woodMC});save();}}
  if(signature!==liveSignature){liveSignature=signature;render();}
 });
 window.addEventListener('live-refresh',()=>live.refresh());
 window.addEventListener('offline',()=>live.offline());
-window.addEventListener('online',()=>live.refresh());
+window.addEventListener('online',()=>{live.refresh();refreshProcess();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshProcess();});
 setInterval(()=>live.tick(),1000);
 live.refresh();
 save();resetForm();render();
 if(active())ensureClimate(active().location);
+setInterval(()=>{if(active())processFeed.refresh();},120000);
 setInterval(render,60000);
 
 $$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1';});
-$$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty){say('Há alterações não salvas. Salve a fornada antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
+$$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty||physicalDirty){say('Há alterações não salvas. Salve a fornada antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
 $$('sync-auth-cancel').onclick=()=>{$$('sync-password').value='';$$('sync-auth').close();};
 $$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
  try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();}

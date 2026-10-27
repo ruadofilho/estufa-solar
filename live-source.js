@@ -6,7 +6,7 @@
   if(!valid(d))return {status:'invalid',airValid:false};
   const age=d.age_seconds+Math.max(0,elapsed);
   const fresh=!d.stale&&age<=300;
-  return {status:fresh?'online':'stale',airValid:fresh&&d.sensor_ok,airT:d.temperatura,airRH:d.umidade,age,coolers:d.coolers_ligados,test:d.teste,epoch:d.epoch,receivedAt:d.received_at,woodTempValid:false,woodValid:false};
+  return {status:fresh?'online':'stale',airValid:fresh&&d.sensor_ok,airT:d.temperatura,airRH:d.umidade,age,coolers:d.coolers_ligados,test:d.teste,epoch:d.epoch,receivedAt:d.received_at,woodTempValid:fresh&&d.wood_temperature_valid===true&&Number.isFinite(d.wood_temperature)&&d.wood_temperature>=0&&d.wood_temperature<=80,woodTemp:d.wood_temperature,woodValid:fresh&&d.wood_calibrated===true&&Number.isFinite(d.wood_moisture)&&d.wood_moisture>=1&&d.wood_moisture<=200,woodMC:d.wood_moisture,woodBatch:d.batch_id};
  }
  function create(onChange,fetcher=globalThis.fetch.bind(globalThis),clock=()=>performance.now()){
   let packet=null,received=0,busy=false,failed=false;
