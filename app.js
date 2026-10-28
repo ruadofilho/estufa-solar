@@ -67,13 +67,18 @@ function climateFor(b){return state.climates[b?.location?.id];}
 function drawTimer(b,r){
  const main=$$('time-main'),sub=$$('time-caption'),meta=$$('time-meta');
  $$('time-remaining').className='arrival-clock '+(r?.status==='target'?'at-target':'');
- $$('time-meter-fill').style.width=(r?.progress||0)+'%';
+ const progress=r?.status==='target'||r?.status==='estimatedTarget'?100:Math.max(0,Math.min(100,r?.progress||0));
+ $$('time-meter-fill').style.width=progress+'%';
+ document.querySelectorAll('.sand-top').forEach(el=>el.setAttribute('transform','translate(0 '+(38*progress/100)+') scale(1 '+(1-progress/100)+')'));
+ document.querySelectorAll('.sand-bottom').forEach(el=>el.setAttribute('transform','translate(0 '+(84*(1-progress/100))+') scale(1 '+(progress/100)+')'));
+ document.querySelectorAll('.sand').forEach(el=>el.style.opacity=progress>=100?'0':'1');
  $$('time-goal').textContent=b?'META '+n(Number(b.target))+'%':'SUA PRÓXIMA CARGA';
  if(!b){main.textContent='--';sub.textContent='Cadastre a madeira para começar.';meta.textContent='Pinus elliottii · sua estufa, no seu ritmo';return;}
  meta.textContent=b.name+' · '+b.location.name+' · '+n(M.capacity(b).volume,4)+' m³';
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Esta fornada foi encerrada por você.';return;}
  if(r.status==='forecast'&&r.conditional){
- main.innerHTML='<span class="days-digits">'+r.central+'</span><span class="days-unit">dias estimados</span>';
+ const hours=Math.max(0,Math.ceil((r.earliest-r.anchor)/3600000)),days=Math.floor(hours/24),rest=hours%24;
+ main.innerHTML='<span class="days-digits">'+days+'</span><span class="days-unit">'+(days===1?'dia':'dias')+(rest?' e '+rest+' h':'')+' estimados</span>';
  sub.textContent=(r.approach==='observed-cycle'?'Referência: ciclo medido nas últimas 24 h, ajustado pela meteorologia. ':'Referência: modelo térmico provisório; ainda falta um ciclo completo medido. ')+'Chegada calculada: '+fmtDate(r.earliest)+'. Vale se o comportamento projetado se mantiver; não é garantia de prazo.';
  }else if(r.status==='forecast'){
  const upper=Number.isFinite(r.high)&&Number.isFinite(r.latest);
@@ -88,6 +93,7 @@ function drawTimer(b,r){
 }
 function render(){
  const b=active(),t=state.telemetry;
+ document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online');
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
  $$('wood-temperature').textContent=t?.woodTempValid?n(t.woodTemp):'--';$$('wood-moisture').textContent=t?.woodValid?n(t.woodMC):'--';
