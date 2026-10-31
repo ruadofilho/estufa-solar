@@ -1,4 +1,5 @@
 'use strict';
+let pedidoCooler=null,envioCooler=false;
 const KEY='estufa-laboratorio-v2',M=window.EstufaModel,P=window.EstufaPlanner,$$=id=>document.getElementById(id);
 const n=(v,d=1)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -99,7 +100,8 @@ function render(){
  $$('external-temperature').textContent=t?.externalValid?n(t.externalT):'--';$$('external-humidity').textContent=t?.externalValid?n(t.externalRH):'--';
  $$('external-status').textContent=t?.externalValid?'Umidade relativa do ar · DHT11 externo':fresh?'Sem leitura externa válida recebida do DHT11.':'Aguardando transmissão atual do sensor externo.';
  $$('badge').className=fresh&&t.airValid?'badge online':'badge';$$('conexao').textContent=fresh?(t.airValid?'ESTUFA CONECTADA':'CONECTADA · SENSOR SEM LEITURA'):t?.status==='stale'?'LEITURA ANTIGA':t?.status==='loading'?'CONECTANDO':'SEM CONEXÃO';
- $$('modo').textContent=fresh?(t.test?'Teste':'Automático · 09h–18h'):'--';
+ $$('modo').textContent=fresh?(t.coolerMode==='on'?'Manual · ligado':t.coolerMode==='off'?'Manual · desligado':t.test?'Teste':'Automático · 09h–18h'):'--';
+ atualizarConfirmacaoCooler(t);
  $$('hora-dispositivo').textContent=fresh?stamp(t.epoch*1000):'Aguardando leitura atual';
  $$('ultima').textContent=t?.receivedAt?'Recebida em '+stamp(t.receivedAt):'Nenhuma leitura atual recebida';
  $$('coolers').textContent=fresh?'Último comando: '+(t.coolers?'LIGADOS':'DESLIGADOS'):'Último comando: --';
@@ -288,3 +290,25 @@ window.addEventListener('online',refreshCloud);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCloud();});
 setInterval(()=>{if(!document.hidden&&!$$('sync-auth').open)refreshCloud();},15000);
 refreshCloud();
+
+
+function atualizarConfirmacaoCooler(t){
+ const status=document.getElementById('cooler-command-status');if(!status||!pedidoCooler)return;
+ const label={on:'ligado',off:'desligado',auto:'automático'}[pedidoCooler.mode];
+ if(t?.status==='online'&&t.coolerCommandId===pedidoCooler.id&&t.coolerMode===pedidoCooler.mode)status.textContent='ESP32 confirmou o modo '+label+'. O giro não é monitorado.';
+ else status.textContent='Pedido de modo '+label+' enviado. Aguardando confirmação da ESP32; pode levar cerca de 2 minutos ou mais se houver falha de conexão.';
+}
+document.querySelectorAll('[data-cooler-command]').forEach(button=>button.addEventListener('click',async()=>{
+ if(envioCooler)return;
+ if(!cloudToken){say('Use Liberar edição e informe sua senha para controlar os coolers.');document.getElementById('sync-login').click();return;}
+ envioCooler=true;document.querySelectorAll('[data-cooler-command]').forEach(b=>b.disabled=true);
+ const message=document.getElementById('cooler-command-status');message.textContent='Enviando pedido…';
+ const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
+ try{
+  const response=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken},body:JSON.stringify({mode:button.dataset.coolerCommand}),signal:abort.signal,cache:'no-store',credentials:'omit'});
+  const data=await response.json();
+  if(!response.ok)throw Error(response.status===401?'Senha recusada. Libere a edição novamente.':'Pedido não aceito (HTTP '+response.status+').');
+  pedidoCooler=data.command;atualizarConfirmacaoCooler(state.telemetry);
+ }catch(e){message.textContent='Envio não confirmado. '+(e.name==='AbortError'?'O pedido pode ter chegado; confira o estado antes de tentar novamente.':e.message);}
+ finally{clearTimeout(timer);envioCooler=false;document.querySelectorAll('[data-cooler-command]').forEach(b=>b.disabled=false);}
+}));
