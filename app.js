@@ -96,8 +96,8 @@ function render(){
  document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online');
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
- $$('wood-temperature').textContent=t?.woodTempValid?n(t.woodTemp):'--';$$('wood-moisture').textContent=t?.woodValid?n(t.woodMC):'--';
- $$('wood-status').textContent=t?.woodValid?'Leitura da sonda calibrada':'Sem leitura direta da madeira; veja a estimativa abaixo.';
+ $$('external-temperature').textContent=t?.externalValid?n(t.externalT):'--';$$('external-humidity').textContent=t?.externalValid?n(t.externalRH):'--';
+ $$('external-status').textContent=t?.externalValid?'Umidade relativa do ar · DHT11 externo':fresh?'Sem leitura externa válida recebida do DHT11.':'Aguardando transmissão atual do sensor externo.';
  $$('badge').className=fresh&&t.airValid?'badge online':'badge';$$('conexao').textContent=fresh?(t.airValid?'ESTUFA CONECTADA':'CONECTADA · SENSOR SEM LEITURA'):t?.status==='stale'?'LEITURA ANTIGA':t?.status==='loading'?'CONECTANDO':'SEM CONEXÃO';
  $$('modo').textContent=fresh?(t.test?'Teste':'Automático · 09h–18h'):'--';
  $$('hora-dispositivo').textContent=fresh?stamp(t.epoch*1000):'Aguardando leitura atual';
@@ -105,7 +105,7 @@ function render(){
  $$('coolers').textContent=fresh?'Último comando: '+(t.coolers?'LIGADOS':'DESLIGADOS'):'Último comando: --';
  $$('coolers').nextElementSibling.textContent='O giro dos ventiladores não é monitorado.';
  $$('aviso').textContent=fresh?(t.airValid?'Temperatura e umidade do ar recebidas da estufa. Atualização a cada dois minutos.':'ESP32 conectada; sensor do ar sem leitura válida.') : t?.status==='stale'?'A última leitura tem mais de cinco minutos. Aguardando nova transmissão.':'Aguardando acesso ao receptor da estufa. Na nova conta, a conexão depende de liberar o novo endereço. O painel atual continua disponível no link acima.';
- $$('rodape-status').textContent=fresh?(t.airValid?'LEITURA REAL · NOVAS SONDAS A INSTALAR':'ESP32 CONECTADA · SENSOR DO AR SEM LEITURA VÁLIDA'):'AGUARDANDO LEITURA REAL';
+ $$('rodape-status').textContent=fresh?(t.airValid?'LEITURA REAL · SENSORES DO AR':'ESP32 CONECTADA · SENSOR DO AR SEM LEITURA VÁLIDA'):'AGUARDANDO LEITURA REAL';
  renderFornadaHistory();
  $$('close-batch').disabled=!b||b.status==='closed';
  syncControls();
