@@ -14,7 +14,7 @@
  svg.appendChild(layer);
  const owl=layer.querySelector('#scene-owl');
  const eyes=layer.querySelector('.owl-eyes'),closed=layer.querySelector('.owl-closed'),owlWings=layer.querySelector('.owl-flying');
- let wasNight=false,arrival=0;
+
  function render(){
   const now=Date.now();let rise=Number(svg.dataset.sunrise),set=Number(svg.dataset.sunset);
   const preview=['127.0.0.1','localhost'].includes(location.hostname)?new URLSearchParams(location.search).get('aves'):null;
@@ -23,15 +23,13 @@
   if(preview==='partida'){rise=now-((now/1000)%10)*1000;set=now+3600000;}
   if(!rise||!set){owl.style.display='none';return;}
   const night=now<rise||now>=set,leaving=!night&&now-rise<8000;
-  if(night&&!wasNight)arrival=now;
-  wasNight=night;
-  const arriving=night&&now-arrival<8000;
+  const arriving=night&&now>=set&&now-set<8000;
   owl.style.display=night||leaving?'inline':'none';
   const blink=Math.floor(now/1000)%7===0;eyes.style.display=blink?'none':'inline';closed.style.display=blink?'inline':'none';
   owlWings.style.display=leaving||arriving?'inline':'none';
   owlWings.setAttribute('transform','scale(1 '+(0.65+0.35*Math.sin(now/120)).toFixed(2)+')');
   let ox=107,oy=80;
-  if(arriving){const t=(now-arrival)/8000;ox=430+(107-430)*t;oy=30+50*t-Math.sin(t*Math.PI)*15;}
+  if(arriving){const t=(now-set)/8000;ox=430+(107-430)*t;oy=30+50*t-Math.sin(t*Math.PI)*15;}
   if(leaving){const t=(now-rise)/8000;ox+=t*330;oy-=t*110;}
   owl.setAttribute('aria-label',arriving?'Corujinha chegando ao pôr do sol':leaving?'Corujinha partindo ao nascer do sol':'Corujinha no ponto mais alto do telhado');
   owl.setAttribute('transform',`translate(${ox} ${oy})`);
