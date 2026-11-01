@@ -1013,5 +1013,5 @@ function run(time){frame=0;if(!allowed||document.hidden)return;if(time-last>50){
  }frame=requestAnimationFrame(run);}
 function start(){if(allowed&&!document.hidden&&!frame)frame=requestAnimationFrame(run);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;}else start();});start();
-})();</script></body></html>
+})();</script><script src="scene-calendar.js?v=festas20261101"></script></body></html>
 
