@@ -16,7 +16,7 @@ function draw(){
  const fog=code===45||code===48,cloud=code===2||code===3||rain||snow||fog;
  let label=!valid?'Clima indisponível':code>=95?'Trovoadas':snow?'Neve':rain?'Chuva':fog?'Neblina':code===3?'Nublado':code===2?'Parcialmente nublado':day===false?'Céu limpo':'Ensolarado';
  art.style.background=day===false?'#303a60':cloud?'#b9c8d5':'#a8dded';
- svg.querySelectorAll('.sky-sun').forEach(e=>e.style.display=day===true&&(!cloud||code===2)?'':'none');
+ svg.querySelectorAll('.sky-sun').forEach(e=>e.style.display=day!==false&&(!cloud||code===2)?'':'none');
  let shapes='';
  if(day===false){shapes+='<path fill="#fff2bc" d="M72 15h30v8H88v24h22v8H72V15Z"/>';if(!cloud)shapes+='<path fill="#f9edbf" d="M155 20h4v4h-4zm100 20h4v4h-4zm80-20h4v4h-4z"/>';}
  if(cloud)shapes+='<path class="cloud-drift" fill="'+(rain?'#71849d':'#f3f4ed')+'" stroke="#697d94" stroke-width="2" d="M45 40h15V26h28V18h28v10h26v14h17v20H45zm175-10h20V16h30v8h27v14h23v22H220z"/>';

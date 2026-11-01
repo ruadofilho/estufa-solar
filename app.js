@@ -1,5 +1,5 @@
 'use strict';
-let pedidoCooler=null,envioCooler=false;
+let pedidoCooler=null,envioCooler=false,acaoAposLogin=null;
 const KEY='estufa-laboratorio-v2',M=window.EstufaModel,P=window.EstufaPlanner,$$=id=>document.getElementById(id);
 const n=(v,d=1)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -50,14 +50,19 @@ async function changeCloud(action,expected=cloud.revision){
  finally{cloudBusy=false;render();}
 }
 function syncControls(){
+ window.configLiberada=!!cloudToken;
+ document.getElementById('settings-content').hidden=!cloudToken;
+ document.getElementById('settings-locked').hidden=!!cloudToken;
+ if(!cloudToken&&document.getElementById('tab-configuracoes').getAttribute('aria-selected')==='true')abrir('painel');
+
  const can=cloudReady&&!!cloudToken&&!cloudBusy&&!readBusy;
- $$('sync-status').textContent=syncStatus;$$('sync-login').textContent=cloudToken?'Bloquear edição':'Liberar edição';
+ $$('sync-status').textContent=syncStatus;$$('sync-login').textContent=cloudToken?'Sair':'Entrar';
  $$('sync-migrate').hidden=!(cloudReady&&cloud.revision===0&&canonical?.batches.length===0&&originalLocal.batches.length);
  $$('sync-migrate').disabled=!can;
  for(const id of ['start-new','close-batch','undo-delete','import-simple'])$$ (id).disabled=!can||(id==='close-batch'&&(!active()||active().status==='closed'));
- for(const el of $$('batch-form').querySelectorAll('input,select,button'))el.disabled=!can;
+ for(const el of document.querySelectorAll('#batch-form input,#batch-form select,#batch-form button,[form="batch-form"]'))el.disabled=!can;
  for(const el of $$('physical-parameters').querySelectorAll('input,button'))el.disabled=!can||formMode==='new'||!active();
- $$('backup-status').textContent='Fornadas guardadas na nuvem. Exportar uma cópia continua disponível.';
+ $$('backup-status').textContent='';
  for(const el of document.querySelectorAll('[data-pick],[data-edit],[data-delete]'))el.disabled=!can;
  if(!can&&$$('process-status'))$$('process-status').dataset.readonly='1';
 }
@@ -94,7 +99,8 @@ function drawTimer(b,r){
 }
 function render(){
  const b=active(),t=state.telemetry;
- document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online');
+ document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online'&&t.airValid===true);
+ document.getElementById('kiln-wind')?.classList.toggle('coolers-active',t?.status==='online'&&t.coolers===true);
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
  $$('external-temperature').textContent=t?.externalValid?n(t.externalT):'--';$$('external-humidity').textContent=t?.externalValid?n(t.externalRH):'--';
@@ -104,9 +110,9 @@ function render(){
  atualizarConfirmacaoCooler(t);
  $$('hora-dispositivo').textContent=fresh?stamp(t.epoch*1000):'Aguardando leitura atual';
  $$('ultima').textContent=t?.receivedAt?'Recebida em '+stamp(t.receivedAt):'Nenhuma leitura atual recebida';
- $$('coolers').textContent=fresh?'Último comando: '+(t.coolers?'LIGADOS':'DESLIGADOS'):'Último comando: --';
- $$('coolers').nextElementSibling.textContent='O giro dos ventiladores não é monitorado.';
- $$('aviso').textContent=fresh?(t.airValid?'Temperatura e umidade do ar recebidas da estufa. Atualização a cada dois minutos.':'ESP32 conectada; sensor do ar sem leitura válida.') : t?.status==='stale'?'A última leitura tem mais de cinco minutos. Aguardando nova transmissão.':'Aguardando acesso ao receptor da estufa. Na nova conta, a conexão depende de liberar o novo endereço. O painel atual continua disponível no link acima.';
+ $$('coolers').textContent=fresh?(t.coolers?'Ligados':'Desligados'):'Sem conexão';
+ $$('coolers').nextElementSibling.textContent='';
+ $$('aviso').textContent=fresh?(t.airValid?'':'Sensor interno sem leitura.'):t?.status==='stale'?'Leituras desatualizadas.':'Aguardando conexão com a estufa.';
  $$('rodape-status').textContent=fresh?(t.airValid?'LEITURA REAL · SENSORES DO AR':'ESP32 CONECTADA · SENSOR DO AR SEM LEITURA VÁLIDA'):'AGUARDANDO LEITURA REAL';
  renderFornadaHistory();
  $$('close-batch').disabled=!b||b.status==='closed';
@@ -276,9 +282,9 @@ setInterval(render,60000);
 
 $$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1';});
 $$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty||physicalDirty){say('Há alterações não salvas. Salve a fornada antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
-$$('sync-auth-cancel').onclick=()=>{$$('sync-password').value='';$$('sync-auth').close();};
+$$('sync-auth-cancel').onclick=()=>{acaoAposLogin=null;window.configPendente=false;$$('sync-password').value='';$$('sync-auth').close();};
 $$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
- try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();}
+ try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();if(window.configPendente){window.configPendente=false;go('configuracoes');}if(acaoAposLogin){const action=acaoAposLogin;acaoAposLogin=null;await action();}}
  catch(e){$$('sync-auth-message').textContent=e.status===401?'Senha incorreta.':e.status===503?'A edição ainda não foi configurada no receptor.':'Não foi possível liberar a edição. Tente novamente.';}
  finally{$$('sync-auth-submit').disabled=false;}
 };
@@ -293,43 +299,69 @@ refreshCloud();
 
 
 function atualizarConfirmacaoCooler(t){
- const applied=document.getElementById('cooler-schedule-applied');if(applied)applied.textContent=t?.status==='online'&&Number.isInteger(t.coolerStart)&&Number.isInteger(t.coolerEnd)&&Number.isInteger(t.coolerDays)?'Programação confirmada pela ESP32: '+horaCooler(t.coolerStart)+' às '+horaCooler(t.coolerEnd)+' · '+diasCooler(t.coolerDays):'Programação da ESP32: aguardando leitura atual.';
- const status=document.getElementById('cooler-command-status');if(!status||!pedidoCooler)return;
- const label={on:'ligado',off:'desligado',auto:'automático'}[pedidoCooler.mode];
- if(t?.status==='online'&&t.coolerCommandId===pedidoCooler.id&&t.coolerMode===pedidoCooler.mode)status.textContent='ESP32 confirmou o modo '+label+'. O giro não é monitorado.';
- else status.textContent='Pedido de modo '+label+' enviado. Aguardando confirmação da ESP32; pode levar cerca de 2 minutos ou mais se houver falha de conexão.';
+ const manual=pedidoCooler&&t?.coolerCommandId!==pedidoCooler.id?pedidoCooler.mode:t?.coolerMode;
+ const auto=document.getElementById('cooler-auto'),button=document.getElementById('cooler-manual');
+ if(!auto||!button)return;
+ auto.setAttribute('aria-pressed',String(manual==='auto'));
+ button.setAttribute('aria-pressed',String(manual==='on'||manual==='off'));
+ button.textContent=manual==='on'?'Manual · Ligado':manual==='off'?'Manual · Desligado':'Manual';
+ const status=document.getElementById('cooler-command-status');
+ if(!pedidoCooler){status.textContent='';return;}
+ const confirmed=t?.status==='online'&&t.coolerCommandId===pedidoCooler.id&&t.coolerMode===pedidoCooler.mode;
+ status.textContent=confirmed?'Confirmado pela ESP32.':'Aguardando confirmação…';
 }
-document.querySelectorAll('[data-cooler-command]').forEach(button=>button.addEventListener('click',async()=>{
- if(envioCooler)return;
- if(!cloudToken){say('Use Liberar edição e informe sua senha para controlar os coolers.');document.getElementById('sync-login').click();return;}
- let payload={mode:button.dataset.coolerCommand};
- if(button.dataset.coolerCommand==='schedule'){
-  const start=minutoCooler(document.getElementById('cooler-start').value),end=minutoCooler(document.getElementById('cooler-end').value);
-  const days=[...document.querySelectorAll('[data-cooler-day]:checked')].reduce((m,c)=>m|(1<<Number(c.dataset.coolerDay)),0);
-  if(!Number.isInteger(start)||!Number.isInteger(end)||start===end){document.getElementById('cooler-command-status').textContent='Informe inicio e termino diferentes.';return;}
-  payload={start,end,days};
- }
- envioCooler=true;document.querySelectorAll('[data-cooler-command]').forEach(b=>b.disabled=true);
- const message=document.getElementById('cooler-command-status');message.textContent='Enviando pedido…';
+function solicitarConfiguracoes(){
+ if(cloudToken){window.configPendente=false;go('configuracoes');return;}
+ window.configPendente=true;
+ if(!document.getElementById('sync-auth').open)document.getElementById('sync-login').click();
+}
+function autorizarAcaoCooler(action){
+ if(cloudToken){action();return;}
+ acaoAposLogin=action;
+ document.getElementById('sync-login').click();
+}
+function horaCooler(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
+function minutoCooler(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s))return NaN;const [h,m]=s.split(':').map(Number);return h*60+m;}
+async function enviarCoolerSimples(payload){
+ if(envioCooler)return false;
+ envioCooler=true;
+ const ids=['cooler-auto','cooler-manual','cooler-dialog-confirm'];ids.forEach(id=>document.getElementById(id).disabled=true);
+ const status=document.getElementById('cooler-command-status'),error=document.getElementById('cooler-dialog-error');error.textContent='';status.textContent='Enviando…';
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
  try{
   const response=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken},body:JSON.stringify(payload),signal:abort.signal,cache:'no-store',credentials:'omit'});
-  const data=await response.json();
-  if(!response.ok)throw Error(response.status===401?'Senha recusada. Libere a edição novamente.':'Pedido não aceito (HTTP '+response.status+').');
-  pedidoCooler=data.command;atualizarConfirmacaoCooler(state.telemetry);
- }catch(e){message.textContent='Envio não confirmado. '+(e.name==='AbortError'?'O pedido pode ter chegado; confira o estado antes de tentar novamente.':e.message);}
- finally{clearTimeout(timer);envioCooler=false;document.querySelectorAll('[data-cooler-command]').forEach(b=>b.disabled=false);}
-}));
-
-function horaCooler(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
-function minutoCooler(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s))return NaN;const [h,m]=s.split(':').map(Number);return h*60+m;}
-function diasCooler(mask){return ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].filter((_,i)=>mask&(1<<i)).join(', ')||'nenhum dia';}
-document.getElementById('cooler-load').addEventListener('click',async()=>{
- if(!cloudToken){document.getElementById('sync-login').click();return;}
- const message=document.getElementById('cooler-command-status');
+  const data=await response.json();if(!response.ok)throw Error(response.status===401?'Entre novamente para autorizar.':'Não foi possível enviar. Tente novamente.');
+  if(!data.command?.id||!['on','off','auto'].includes(data.command.mode))throw Error('Resposta inválida do controle.');
+  pedidoCooler=data.command;atualizarConfirmacaoCooler(state.telemetry);return true;
+ }catch(e){status.textContent=e.name==='AbortError'?'Envio não confirmado. Confira o estado antes de repetir.':e.message;error.textContent=status.textContent;return false;}
+ finally{clearTimeout(timer);envioCooler=false;ids.forEach(id=>document.getElementById(id).disabled=false);}
+}
+async function abrirProgramacaoSimples(){
+ const dialog=document.getElementById('cooler-dialog'),error=document.getElementById('cooler-dialog-error');
+ error.textContent='Carregando…';document.getElementById('cooler-dialog-confirm').disabled=true;dialog.showModal();
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
- try{const r=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{headers:{Authorization:'Bearer '+cloudToken},cache:'no-store',signal:abort.signal});const data=await r.json();if(!r.ok)throw Error('Não foi possível carregar (HTTP '+r.status+').');const c=data.command;
- if(!Number.isInteger(c.start)||!Number.isInteger(c.end)||!Number.isInteger(c.days))throw Error('Atualize primeiro o receptor no Cloudflare.');
- document.getElementById('cooler-start').value=horaCooler(c.start);document.getElementById('cooler-end').value=horaCooler(c.end);document.querySelectorAll('[data-cooler-day]').forEach(e=>e.checked=!!(c.days&(1<<Number(e.dataset.coolerDay))));message.textContent='Programação salva carregada. Altere os campos e clique em Salvar para enviar.';
- }catch(e){message.textContent=e.message;}finally{clearTimeout(timer);}
+ try{
+  const response=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{headers:{Authorization:'Bearer '+cloudToken},cache:'no-store',signal:abort.signal});const data=await response.json();
+  const c=data.command;if(!response.ok||!Number.isInteger(c?.start)||!Number.isInteger(c?.end)||!Number.isInteger(c?.days))throw Error('Não foi possível carregar a programação. Feche e tente novamente.');
+  document.getElementById('cooler-start').value=horaCooler(c.start);document.getElementById('cooler-end').value=horaCooler(c.end);
+  document.querySelectorAll('[data-cooler-day]').forEach(input=>input.checked=!!(c.days&(1<<Number(input.dataset.coolerDay))));
+  error.textContent='';document.getElementById('cooler-dialog-confirm').disabled=false;
+ }catch(e){error.textContent=e.message;}finally{clearTimeout(timer);}
+}
+document.getElementById('cooler-auto').onclick=()=>autorizarAcaoCooler(abrirProgramacaoSimples);
+document.getElementById('cooler-manual').onclick=()=>autorizarAcaoCooler(()=>{
+ const mode=pedidoCooler?.mode??state.telemetry?.coolerMode;
+ return enviarCoolerSimples({mode:mode==='on'?'off':'on'});
 });
+document.getElementById('cooler-dialog-cancel').onclick=()=>document.getElementById('cooler-dialog').close();
+document.getElementById('cooler-dialog-confirm').onclick=async()=>{
+ const start=minutoCooler(document.getElementById('cooler-start').value),end=minutoCooler(document.getElementById('cooler-end').value);
+ const days=[...document.querySelectorAll('[data-cooler-day]:checked')].reduce((mask,input)=>mask|(1<<Number(input.dataset.coolerDay)),0);
+ if(!Number.isInteger(start)||!Number.isInteger(end)||start===end){document.getElementById('cooler-dialog-error').textContent='Informe horários de início e término diferentes.';return;}
+ if(days===0){document.getElementById('cooler-dialog-error').textContent='Escolha pelo menos um dia.';return;}
+ if(await enviarCoolerSimples({mode:'auto',start,end,days}))document.getElementById('cooler-dialog').close();
+};
+
+for(const el of document.querySelectorAll('[form="batch-form"]'))el.addEventListener('input',()=>document.getElementById('batch-form').dataset.dirty='1');
+
+document.getElementById('sync-auth').addEventListener('close',()=>{if(!cloudToken){acaoAposLogin=null;window.configPendente=false;}});
