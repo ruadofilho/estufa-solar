@@ -7,9 +7,10 @@ let data=null,busy=false;
 function draw(){
  const now=Date.now(),today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(now);
  const valid=data&&Math.abs(now-data.current.time*1000)<90*60000;
- const index=valid?data.daily.time.findIndex(t=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(t*1000)===today):-1;
+ const index=data?data.daily.time.findIndex(t=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(t*1000)===today):-1;
  const rise=index>=0?data.daily.sunrise[index]*1000:NaN,set=index>=0?data.daily.sunset[index]*1000:NaN;
- const day=valid&&Number.isFinite(rise)&&Number.isFinite(set)?now>=rise&&now<set:null;
+ svg.dataset.sunrise=Number.isFinite(rise)?String(rise):'';svg.dataset.sunset=Number.isFinite(set)?String(set):'';
+ const day=Number.isFinite(rise)&&Number.isFinite(set)?now>=rise&&now<set:null;
  const code=valid?data.current.weather_code:null;
  const rain=code!==null&&((code>=51&&code<=67)||(code>=80&&code<=82)||code>=95);
  const snow=code!==null&&((code>=71&&code<=77)||code===85||code===86);
