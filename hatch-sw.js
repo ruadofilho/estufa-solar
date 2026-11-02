@@ -1,0 +1,5 @@
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+// No cache interception: live sensor readings must never be served from an offline cache.
+self.addEventListener('push',event=>{event.waitUntil((async()=>{let data;try{data=event.data.json();}catch{data={title:'FÁBRICA.EXE',body:'Consulte a orientação das escotilhas.'};}await self.registration.showNotification(data.title,{body:data.body,tag:'fabrica-escotilhas',renotify:false,icon:'./hatch-192.png',data:{url:new URL('./',self.registration.scope).href},timestamp:Date.now()});})());});
+self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil((async()=>{const url=event.notification.data.url;const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});const current=windows.find(w=>w.url.startsWith(self.registration.scope));if(current){await current.focus();return;}await self.clients.openWindow(url);})());});

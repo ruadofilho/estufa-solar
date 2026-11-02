@@ -1,0 +1,19 @@
+(async()=>{
+ const box=document.createElement('div');box.style.cssText='padding:12px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+ box.innerHTML='<strong role="status" id="hatch-action">ESCOTILHAS: MANTER</strong><button id="hatch-confirm" hidden>Confirmar execução</button><details><summary>Escotilhas</summary><p id="hatch-note"></p><button id="hatch-open">Confirmar abertas</button> <button id="hatch-closed">Confirmar fechadas</button> <button id="hatch-push">Ativar avisos</button> <button id="hatch-test">Testar com site fechado</button> <button id="hatch-install" hidden>Instalar</button></details>';
+ const target=document.querySelector('#painel .intro')||document.querySelector('main')||document.body;target.after(box);
+ const $=id=>document.getElementById('hatch-'+id);let state={},token='',installEvent;
+ const endpoint=window.FabricaHatchConfig?.endpoint;
+ const note=text=>$('note').textContent=text;
+ async function api(path,data){const r=await fetch(endpoint+path,{cache:'no-store',headers:data?{'Content-Type':'application/json','Authorization':'Bearer '+token}:{},...(data?{method:'POST',body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(r.status===401?'Chave de operação inválida.':'Serviço indisponível ('+r.status+').');return r.json();}
+ function key(){if(!token)token=prompt('Chave de operação das escotilhas (somente nesta sessão):')||'';return !!token;}
+ async function refresh(){if(!endpoint){note('Monitoramento das escotilhas aguarda configuração do servidor.');return;}try{state=await api('/status');$('action').textContent='ESCOTILHAS: '+state.action;$('confirm').hidden=state.action==='MANTER'||state.position===state.action;note(state.position?'Última posição confirmada: '+(state.position==='ABRIR'?'abertas':'fechadas')+'.':'Confirme a posição atual das escotilhas.');}catch(e){$('action').textContent='ESCOTILHAS: MANTER';$('confirm').hidden=true;note(e.message);}}
+ async function confirm(position){if(!endpoint||!key())return;try{await api('/confirm',{position,revision:state.revision});await refresh();}catch(e){note(e.message);await refresh();}}
+ $('confirm').onclick=()=>confirm(state.action);$('open').onclick=()=>confirm('ABRIR');$('closed').onclick=()=>confirm('FECHAR');
+ let registration;
+ try{if('serviceWorker'in navigator)registration=await navigator.serviceWorker.register('./hatch-sw.js',{scope:'./'});}catch{note('Este navegador não permitiu ativar os avisos.');}
+ $('push').onclick=async()=>{if(!endpoint){note('Avisos aguardam configuração do servidor.');return;}if(!registration||!('PushManager'in window)||!('Notification'in window)){note('Avisos indisponíveis. No iPhone, adicione à Tela de Início e abra pelo ícone. A orientação permanece no site.');return;}if(!key())return;try{await refresh();if(!state.publicKey)throw Error('Servidor sem chave de notificações.');const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Avisos não autorizados. A orientação permanece no site.');const b=atob(state.publicKey.replace(/-/g,'+').replace(/_/g,'/'));const subscription=await registration.pushManager.getSubscription()||await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(b,c=>c.charCodeAt(0))});await api('/subscribe',subscription.toJSON());note('Avisos ativados.');}catch(e){note(e.message);}};
+ $('test').onclick=async()=>{if(!endpoint||!key())return;try{await api('/test',{});note('Teste agendado para daqui a 1 minuto. Feche o site para conferir no celular.');}catch(e){note(e.message);}};
+ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;$('install').hidden=false;});$('install').onclick=async()=>{if(installEvent){await installEvent.prompt();installEvent=null;$('install').hidden=true;}};
+ await refresh();setInterval(()=>{if(!document.hidden)refresh();},60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+})();
