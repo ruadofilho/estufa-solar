@@ -2,7 +2,7 @@
 'use strict';
 const art=document.querySelector('.mission-art'),svg=art?.querySelector('svg'),caption=document.getElementById('sky-caption');
 if(!svg||!caption)return;
-const ns='http://www.w3.org/2000/svg',layer=document.createElementNS(ns,'g');svg.append(layer);
+const ns='http://www.w3.org/2000/svg',layer=document.createElementNS(ns,'g'),ground=document.createElementNS(ns,'g');svg.insertBefore(layer,svg.firstChild);svg.append(ground);window.EstufaArtwork.install(svg);
 let data=null,busy=false;
 function draw(){
  const now=Date.now(),today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(now);
@@ -19,13 +19,13 @@ function draw(){
  art.style.background=day===false?'#303a60':cloud?'#b9c8d5':'#a8dded';
  svg.querySelectorAll('.sky-sun').forEach(e=>e.style.display=day!==false&&(!cloud||code===2)?'':'none');
  let shapes='';
- if(day===false){shapes+='<path fill="#fff2bc" d="M72 15h30v8H88v24h22v8H72V15Z"/>';if(!cloud)shapes+='<path fill="#f9edbf" d="M155 20h4v4h-4zm100 20h4v4h-4zm80-20h4v4h-4z"/>';}
- if(cloud)shapes+='<path class="cloud-drift" fill="'+(rain?'#71849d':'#f3f4ed')+'" stroke="#697d94" stroke-width="2" d="M45 40h15V26h28V18h28v10h26v14h17v20H45zm175-10h20V16h30v8h27v14h23v22H220z"/>';
+ shapes+=window.EstufaArtwork.sky({night:day===false,cloud,rain,clear:valid&&!cloud});
+ if(ground.dataset.rain!==String(rain)){ground.innerHTML=window.EstufaArtwork.ground(rain);ground.dataset.rain=String(rain);}
  if(rain)shapes+='<path stroke="#4b7fba" stroke-width="4" d="M59 67l-5 12m29-12-5 12m29-12-5 12m133-12-5 12m29-12-5 12m29-12-5 12"/>';
- if(code>=95)shapes+='<path fill="#ffe078" d="M120 59h16l-9 13h9l-19 19 5-17h-9z"/>';
+ if(code!==null&&code>=95)shapes+='<path fill="#ffe078" d="M120 59h16l-9 13h9l-19 19 5-17h-9z"/>';
  if(fog)shapes+='<path stroke="#edf2ed" stroke-width="5" d="M30 69h140m50 0h100M40 80h120"/>';
  if(snow)shapes+='<path fill="#fff" d="M60 70h5v5h-5zm30 7h5v5h-5zm160-7h5v5h-5zm30 9h5v5h-5z"/>';
- layer.innerHTML=shapes;
+ const shapeKey=[day,valid,code].join(':');if(layer.dataset.key!==shapeKey){layer.innerHTML=shapes;layer.dataset.key=shapeKey;}
  const stamp=new Date(now).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
  caption.textContent='Sorocaba · '+stamp+' · '+(day===false?'Noite · ':'')+label+(valid?' · Clima externo estimado por Open-Meteo.':' · Aguardando meteorologia externa.');
  svg.setAttribute('aria-label','Estufa solar em pixels. '+caption.textContent);
