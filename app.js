@@ -285,7 +285,7 @@ $$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1
 $$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty||physicalDirty){say('Há alterações não salvas. Salve a fornada antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
 $$('sync-auth-cancel').onclick=()=>{acaoAposLogin=null;window.configPendente=false;$$('sync-password').value='';$$('sync-auth').close();};
 $$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
- try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();if(window.configPendente){window.configPendente=false;go('configuracoes');}if(acaoAposLogin){const action=acaoAposLogin;acaoAposLogin=null;await action();}}
+ try{await cloud.unlock(token);cloudToken=token;window.dispatchEvent(new CustomEvent('fabrica-authorized',{detail:token}));$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();if(window.configPendente){window.configPendente=false;go('configuracoes');}if(acaoAposLogin){const action=acaoAposLogin;acaoAposLogin=null;await action();}}
  catch(e){$$('sync-auth-message').textContent=e.status===401?'Senha incorreta.':e.status===503?'A edição ainda não foi configurada no receptor.':'Não foi possível liberar a edição. Tente novamente.';}
  finally{$$('sync-auth-submit').disabled=false;}
 };

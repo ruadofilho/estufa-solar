@@ -17,6 +17,11 @@
  .hatch-settings button:active{border-color:#77738c #fff #fff #77738c}
  .hatch-settings button[aria-pressed=true]{background:#c8d8ca;border-color:#77738c #fff #fff #77738c}
  #hatch-note{grid-column:1/-1;background:#eeecfa;border:2px solid;border-color:#85809e #fff #fff #85809e;padding:8px 10px;margin:0;min-height:34px}
+ dialog.hatch-settings{margin:auto!important;width:min(640px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;color:#26304c}
+ .hatch-settings::backdrop{background:#26304c66}
+ .hatch-settings h3 #hatch-close{margin-left:auto;min-height:22px;padding:0 6px}
+ #hatch-manage{font-size:11px;padding:4px 8px;min-height:28px}
+ .hatch-explanation{grid-column:1/-1;padding:10px;background:#fffbed;border:2px groove #faf9ff}.hatch-explanation p:last-child{margin-bottom:0}
  @media(max-width:720px){.hatch-status-stack{align-items:flex-start}.hatch-indicator{justify-content:flex-start}.hatch-settings-body{grid-template-columns:1fr;padding:12px;gap:12px}.hatch-settings .hatch-buttons button{flex:1}}
  `;
  document.head.append(style);
@@ -26,15 +31,20 @@
  const stack=document.createElement('div');stack.className='hatch-status-stack';
  const badge=intro?.querySelector('#badge');if(badge)stack.append(badge);stack.append(box);(intro||document.body).append(stack);
  const settings=document.createElement('article');settings.className='hatch-settings';settings.setAttribute('aria-labelledby','hatch-settings-title');
- settings.innerHTML='<h3 id="hatch-settings-title"><span class="hatch-window-icon" aria-hidden="true"></span>Escotilhas e avisos</h3><div class="hatch-settings-body"><fieldset><legend>Posição das escotilhas</legend><p>Confirme a posição real após o ajuste manual.</p><div class="hatch-buttons"><button type="button" id="hatch-open" aria-pressed="false">Abertas</button><button type="button" id="hatch-closed" aria-pressed="false">Fechadas</button></div></fieldset><fieldset><legend>Avisos neste aparelho</legend><p>Receba a orientação quando precisar intervir.</p><div class="hatch-buttons"><button type="button" id="hatch-push">Ativar avisos</button><button type="button" id="hatch-test">Testar aviso</button><button type="button" id="hatch-install" hidden>Instalar</button></div></fieldset><p id="hatch-note" role="status" aria-live="polite"></p></div>';
- (document.querySelector('#settings-content')||document.querySelector('#configuracoes')||document.body).prepend(settings);
+ settings.innerHTML='<h3 id="hatch-settings-title"><span class="hatch-window-icon" aria-hidden="true"></span>Escotilhas e avisos</h3><div class="hatch-settings-body"><fieldset><legend>Posição das escotilhas</legend><p>Confirme a posição real após o ajuste manual.</p><div class="hatch-buttons"><button type="button" id="hatch-open" aria-pressed="false">Abertas</button><button type="button" id="hatch-closed" aria-pressed="false">Fechadas</button></div></fieldset><fieldset><legend>Avisos neste aparelho</legend><p>Receba a orientação quando precisar intervir.</p><div class="hatch-buttons"><button type="button" id="hatch-push">Ativar avisos</button><button type="button" id="hatch-test">Testar aviso</button><button type="button" id="hatch-install" hidden>Instalar</button></div></fieldset><p id="hatch-note" role="status" aria-live="polite"></p><div class="hatch-explanation"><p id="hatch-reason"></p><p id="hatch-last" hidden></p></div></div>';
+ document.querySelector('#settings-content').prepend(settings);
  const $=id=>document.getElementById('hatch-'+id);let state={},token='',installEvent;
+ window.addEventListener('fabrica-authorized',e=>{token=e.detail;});
  const endpoint=window.FabricaHatchConfig?.endpoint;
  const note=text=>$('note').textContent=text;
- async function api(path,data){const r=await fetch(endpoint+path,{cache:'no-store',headers:data?{'Content-Type':'application/json','Authorization':'Bearer '+token}:{},...(data?{method:'POST',body:JSON.stringify(data)}:{})});if(!r.ok)throw Error(r.status===401?'Chave de operação inválida.':'Serviço indisponível ('+r.status+').');return r.json();}
- function key(){if(!token)token=prompt('Chave de operação das escotilhas (somente nesta sessão):')||'';return !!token;}
- async function refresh(){if(!endpoint){note('Monitoramento das escotilhas aguarda configuração do servidor.');return;}try{state=await api('/status');window.FabricaHatchState=state;window.dispatchEvent(new CustomEvent('hatch-state',{detail:state}));$('action').textContent='ESCOTILHAS: '+state.action;$('confirm').hidden=state.action==='MANTER'||state.position===state.action;$('open').setAttribute('aria-pressed',String(state.position==='ABRIR'));$('closed').setAttribute('aria-pressed',String(state.position==='FECHAR'));note(state.position?'Última posição confirmada: '+(state.position==='ABRIR'?'abertas':'fechadas')+'.':'Confirme a posição atual das escotilhas.');}catch(e){$('action').textContent='ESCOTILHAS: MANTER';$('confirm').hidden=true;note(e.message);}}
- async function confirm(position){if(!endpoint||!key())return;try{await api('/confirm',{position,revision:state.revision});state.position=position;window.FabricaHatchState=state;window.dispatchEvent(new CustomEvent('hatch-state',{detail:state}));await refresh();}catch(e){note(e.message);await refresh();}}
+ async function api(path,data){const r=await fetch(endpoint+path,{cache:'no-store',headers:data?{'Content-Type':'application/json','Authorization':'Bearer '+token}:{},...(data?{method:'POST',body:JSON.stringify(data)}:{})});if(!r.ok){if(r.status===401)token='';throw Error(r.status===401?'Senha incorreta.':'Serviço indisponível ('+r.status+').');}return r.json();}
+ function key(){if(!token)token=prompt('Senha de Configurações:')||'';return !!token;}
+ async function refresh(){if(!endpoint){note('Monitoramento das escotilhas aguarda configuração do servidor.');return;}try{state=await api('/status');
+ $('reason').textContent='Análise atual: '+(state.reason||'Aguardando a próxima análise.');
+ const last=state.lastRecommendation;
+ $('last').hidden=!last;
+ $('last').textContent=last?'Última orientação ('+new Date(last.at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'): '+last.action+' — '+last.reason:'';window.FabricaHatchState=state;window.dispatchEvent(new CustomEvent('hatch-state',{detail:state}));$('action').textContent='ESCOTILHAS: '+state.action;$('confirm').hidden=state.action==='MANTER'||state.position===state.action;$('open').setAttribute('aria-pressed',String(state.position==='ABRIR'));$('closed').setAttribute('aria-pressed',String(state.position==='FECHAR'));note(state.position?'Última posição confirmada: '+(state.position==='ABRIR'?'abertas':'fechadas')+'.':'Confirme a posição atual das escotilhas.');}catch(e){$('action').textContent='ESCOTILHAS: MANTER';$('confirm').hidden=true;$('reason').textContent='Análise atual indisponível; tente novamente.';note(e.message);}}
+ async function confirm(position){if(!endpoint)return;try{await api('/confirm',{position,revision:state.revision});state.position=position;window.FabricaHatchState=state;window.dispatchEvent(new CustomEvent('hatch-state',{detail:state}));await refresh();}catch(e){note(e.message);await refresh();}}
  $('confirm').onclick=()=>confirm(state.action);$('open').onclick=()=>confirm('ABRIR');$('closed').onclick=()=>confirm('FECHAR');
  let registration;
  try{if('serviceWorker'in navigator)registration=await navigator.serviceWorker.register('./hatch-sw.js',{scope:'./'});}catch{note('Este navegador não permitiu ativar os avisos.');}
