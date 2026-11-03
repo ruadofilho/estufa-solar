@@ -99,6 +99,7 @@ function drawTimer(b,r){
 }
 function render(){
  const b=active(),t=state.telemetry;
+ window.FabricaSceneTelemetry=t;window.dispatchEvent(new CustomEvent("scene-telemetry",{detail:t}));
  document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online'&&t.airValid===true);
  document.getElementById('kiln-wind')?.classList.toggle('coolers-active',t?.status==='online'&&t.coolers===true);
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
