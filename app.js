@@ -7,7 +7,7 @@ const localDate=t=>new Date(t-10800000).toISOString().slice(0,16);
 const woodStamp=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'medium'});
 const fmtDate=t=>new Date(t).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit'});
 const seed=window.EstufaClimateSeed;
-function go(name){abrir(name);history.replaceState(null,'','#'+name);}
+function go(name){if(abrir(name))history.replaceState(null,'','#'+name);}
 let state={version:2,batches:[],selected:null,observations:[],climates:{[seed.id]:seed},telemetry:null},storageOK=true,locationChoice={id:seed.id,name:seed.name,state:seed.state,lat:seed.lat,lon:seed.lon};
 let physicalRevision=0,physicalDirty=false,physicalBatch=null;
 let climateGeneration=0,formMode='selected',processData={air:[],weather:new Map(),loading:false},lastProcessBatch='',modelResult=null;
@@ -54,7 +54,7 @@ function syncControls(){
  window.configLiberada=!!cloudToken;
  document.getElementById('settings-content').hidden=!cloudToken;
  document.getElementById('settings-locked').hidden=!!cloudToken;
- if(!cloudToken&&document.getElementById('tab-configuracoes').getAttribute('aria-selected')==='true')abrir('painel');
+ if(!cloudToken&&['fornada','configuracoes'].some(id=>$$('tab-'+id).getAttribute('aria-selected')==='true'))go('painel');
 
  const can=cloudReady&&!!cloudToken&&!cloudBusy&&!readBusy;
  $$('sync-status').textContent=syncStatus;$$('sync-login').textContent=cloudToken?'Sair':'Entrar';
@@ -325,9 +325,9 @@ setInterval(render,60000);
 
 $$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1';});
 $$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty||physicalDirty){say('Há alterações não salvas. Salve o lote antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
-$$('sync-auth-cancel').onclick=()=>{acaoAposLogin=null;window.configPendente=false;$$('sync-password').value='';$$('sync-auth').close();};
+$$('sync-auth-cancel').onclick=()=>{acaoAposLogin=null;window.abaProtegidaPendente=null;$$('sync-password').value='';$$('sync-auth').close();};
 $$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
- try{await cloud.unlock(token);cloudToken=token;window.dispatchEvent(new CustomEvent('fabrica-authorized',{detail:token}));$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();if(window.configPendente){window.configPendente=false;go('configuracoes');}if(acaoAposLogin){const action=acaoAposLogin;acaoAposLogin=null;await action();}}
+ try{await cloud.unlock(token);cloudToken=token;window.dispatchEvent(new CustomEvent('fabrica-authorized',{detail:token}));$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();if(window.abaProtegidaPendente){const aba=window.abaProtegidaPendente;window.abaProtegidaPendente=null;go(aba);}if(acaoAposLogin){const action=acaoAposLogin;acaoAposLogin=null;await action();}}
  catch(e){$$('sync-auth-message').textContent=e.status===401?'Senha incorreta.':e.status===503?'A edição ainda não foi configurada no receptor.':'Não foi possível liberar a edição. Tente novamente.';}
  finally{$$('sync-auth-submit').disabled=false;}
 };
@@ -353,9 +353,8 @@ function atualizarConfirmacaoCooler(t){
  const confirmed=t?.status==='online'&&t.coolerCommandId===pedidoCooler.id&&t.coolerMode===pedidoCooler.mode;
  status.textContent=confirmed?'Confirmado pela ESP32.':'Aguardando confirmação…';
 }
-function solicitarConfiguracoes(){
- if(cloudToken){window.configPendente=false;go('configuracoes');return;}
- window.configPendente=true;
+function solicitarAcessoAba(){
+ if(!window.abaProtegidaPendente)return;
  if(!document.getElementById('sync-auth').open)document.getElementById('sync-login').click();
 }
 function autorizarAcaoCooler(action){
@@ -407,4 +406,4 @@ document.getElementById('cooler-dialog-confirm').onclick=async()=>{
 
 for(const el of document.querySelectorAll('[form="batch-form"]'))el.addEventListener('input',()=>document.getElementById('batch-form').dataset.dirty='1');
 
-document.getElementById('sync-auth').addEventListener('close',()=>{if(!cloudToken){acaoAposLogin=null;window.configPendente=false;}});
+document.getElementById('sync-auth').addEventListener('close',()=>{if(!cloudToken){acaoAposLogin=null;window.abaProtegidaPendente=null;}});
