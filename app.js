@@ -1,5 +1,4 @@
 'use strict';
-let pedidoCooler=null,envioCooler=false,acaoAposLogin=null;
 const KEY='estufa-laboratorio-v2',M=window.EstufaModel,P=window.EstufaPlanner,$$=id=>document.getElementById(id);
 const n=(v,d=1)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -50,19 +49,14 @@ async function changeCloud(action,expected=cloud.revision){
  finally{cloudBusy=false;render();}
 }
 function syncControls(){
- window.configLiberada=!!cloudToken;
- document.getElementById('settings-content').hidden=!cloudToken;
- document.getElementById('settings-locked').hidden=!!cloudToken;
- if(!cloudToken&&document.getElementById('tab-configuracoes').getAttribute('aria-selected')==='true')abrir('painel');
-
  const can=cloudReady&&!!cloudToken&&!cloudBusy&&!readBusy;
- $$('sync-status').textContent=syncStatus;$$('sync-login').textContent=cloudToken?'Sair':'Entrar';
+ $$('sync-status').textContent=syncStatus;$$('sync-login').textContent=cloudToken?'Bloquear edição':'Liberar edição';
  $$('sync-migrate').hidden=!(cloudReady&&cloud.revision===0&&canonical?.batches.length===0&&originalLocal.batches.length);
  $$('sync-migrate').disabled=!can;
  for(const id of ['start-new','close-batch','undo-delete','import-simple'])$$ (id).disabled=!can||(id==='close-batch'&&(!active()||active().status==='closed'));
- for(const el of document.querySelectorAll('#batch-form input,#batch-form select,#batch-form button,[form="batch-form"]'))el.disabled=!can;
+ for(const el of $$('batch-form').querySelectorAll('input,select,button'))el.disabled=!can;
  for(const el of $$('physical-parameters').querySelectorAll('input,button'))el.disabled=!can||formMode==='new'||!active();
- $$('backup-status').textContent='';
+ $$('backup-status').textContent='Fornadas guardadas na nuvem. Exportar uma cópia continua disponível.';
  for(const el of document.querySelectorAll('[data-pick],[data-edit],[data-delete]'))el.disabled=!can;
  if(!can&&$$('process-status'))$$('process-status').dataset.readonly='1';
 }
@@ -73,23 +67,14 @@ function climateFor(b){return state.climates[b?.location?.id];}
 function drawTimer(b,r){
  const main=$$('time-main'),sub=$$('time-caption'),meta=$$('time-meta');
  $$('time-remaining').className='arrival-clock '+(r?.status==='target'?'at-target':'');
- const progress=r?.status==='target'||r?.status==='estimatedTarget'?100:Math.max(0,Math.min(100,r?.progress||0));
- $$('time-meter-fill').style.width=progress+'%';
- document.querySelectorAll('.sand-top').forEach(el=>el.setAttribute('transform','translate(0 '+(38*progress/100)+') scale(1 '+(1-progress/100)+')'));
- document.querySelectorAll('.sand-bottom').forEach(el=>el.setAttribute('transform','translate(0 '+(84*(1-progress/100))+') scale(1 '+(progress/100)+')'));
- document.querySelectorAll('.sand').forEach(el=>el.style.opacity=progress>=100?'0':'1');
+ $$('time-meter-fill').style.width=(r?.progress||0)+'%';
  $$('time-goal').textContent=b?'META '+n(Number(b.target))+'%':'SUA PRÓXIMA CARGA';
  if(!b){main.textContent='--';sub.textContent='Cadastre a madeira para começar.';meta.textContent='Pinus elliottii · sua estufa, no seu ritmo';return;}
  meta.textContent=b.name+' · '+b.location.name+' · '+n(M.capacity(b).volume,4)+' m³';
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Esta fornada foi encerrada por você.';return;}
- if(r.status==='forecast'&&r.conditional){
- const hours=Math.max(0,Math.ceil((r.earliest-r.anchor)/3600000)),days=Math.floor(hours/24),rest=hours%24;
- main.innerHTML='<span class="days-digits">'+days+'</span><span class="days-unit">'+(days===1?'dia':'dias')+(rest?' e '+rest+' h':'')+' estimados</span>';
- sub.textContent=(r.approach==='observed-cycle'?'Referência: ciclo medido nas últimas 24 h, ajustado pela meteorologia. ':'Referência: modelo térmico provisório; ainda falta um ciclo completo medido. ')+'Chegada calculada: '+fmtDate(r.earliest)+'. Vale se o comportamento projetado se mantiver; não é garantia de prazo.';
- }else if(r.status==='forecast'){
- const upper=Number.isFinite(r.high)&&Number.isFinite(r.latest);
- main.innerHTML='<span class="days-digits">'+r.low+(!upper?' ou mais':r.low===r.high?'':'–'+r.high)+'</span><span class="days-unit">dias estimados</span>';
- sub.textContent='Calculado a partir de '+new Date(r.anchor).toLocaleString('pt-BR')+'. '+(!upper?'O cenário conservador não alcança a meta em 180 dias.':'Janela: '+fmtDate(r.earliest)+' a '+fmtDate(r.latest)+'.')+' Parâmetros de secagem provisórios.';
+ if(r.status==='forecast'){
+ main.innerHTML='<span class="days-digits">'+r.low+(r.high===null?' ou mais':r.low===r.high?'':'–'+r.high)+'</span><span class="days-unit">dias estimados</span>';
+ sub.textContent='Calculado a partir de '+new Date(r.anchor).toLocaleString('pt-BR')+'. '+(r.high===null?'O cenário conservador não alcança a meta em 180 dias.':'Janela: '+fmtDate(r.earliest)+' a '+fmtDate(r.latest)+'.')+' Parâmetros de secagem provisórios.';
  }else if(r.status==='target'){main.textContent='Amostra na meta';sub.textContent=r.message;}
  else if(r.status==='estimatedTarget'){main.textContent='Conferir a madeira';sub.textContent=r.message;}
  else if(r.status==='capacity'){main.textContent='Revisar carga';sub.textContent=r.message;}
@@ -99,22 +84,18 @@ function drawTimer(b,r){
 }
 function render(){
  const b=active(),t=state.telemetry;
- window.FabricaSceneTelemetry=t;window.dispatchEvent(new CustomEvent("scene-telemetry",{detail:t}));
- document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online'&&t.airValid===true);
- document.getElementById('kiln-wind')?.classList.toggle('coolers-active',t?.status==='online'&&t.coolers===true);
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
- $$('external-temperature').textContent=t?.externalValid?n(t.externalT):'--';$$('external-humidity').textContent=t?.externalValid?n(t.externalRH):'--';
- $$('external-status').textContent=t?.externalValid?'Umidade relativa do ar · DHT11 externo':fresh?'Sem leitura externa válida recebida do DHT11.':'Aguardando transmissão atual do sensor externo.';
- $$('badge').className=fresh&&t.airValid?'badge online':'badge';$$('conexao').textContent=fresh?(t.airValid?'ESTUFA CONECTADA':'CONECTADA · SENSOR SEM LEITURA'):t?.status==='stale'?'LEITURA ANTIGA':t?.status==='loading'?'CONECTANDO':'SEM CONEXÃO';
- $$('modo').textContent=fresh?(t.coolerMode==='on'?'Manual · ligado':t.coolerMode==='off'?'Manual · desligado':t.test?'Teste':'Automático · programação salva'):'--';
- atualizarConfirmacaoCooler(t);
+ $$('wood-temperature').textContent=t?.woodTempValid?n(t.woodTemp):'--';$$('wood-moisture').textContent=t?.woodValid?n(t.woodMC):'--';
+ $$('wood-status').textContent=t?.woodValid?'Leitura da sonda calibrada':'Sem leitura direta da madeira; veja a estimativa abaixo.';
+ $$('badge').className='badge';$$('conexao').textContent=fresh?'ESTUFA CONECTADA':t?.status==='stale'?'LEITURA ANTIGA':t?.status==='loading'?'CONECTANDO':'SEM CONEXÃO';
+ $$('modo').textContent=fresh?(t.test?'Teste':'Automático · 09h–18h'):'--';
  $$('hora-dispositivo').textContent=fresh?stamp(t.epoch*1000):'Aguardando leitura atual';
  $$('ultima').textContent=t?.receivedAt?'Recebida em '+stamp(t.receivedAt):'Nenhuma leitura atual recebida';
- $$('coolers').textContent=fresh?(t.coolers?'Ligados':'Desligados'):'Sem conexão';
- $$('coolers').nextElementSibling.textContent='';
- $$('aviso').textContent=fresh?(t.airValid?'':'Sensor interno sem leitura.'):t?.status==='stale'?'Leituras desatualizadas.':'Aguardando conexão com a estufa.';
- $$('rodape-status').textContent=fresh?(t.airValid?'LEITURA REAL · SENSORES DO AR':'ESP32 CONECTADA · SENSOR DO AR SEM LEITURA VÁLIDA'):'AGUARDANDO LEITURA REAL';
+ $$('coolers').textContent=fresh?'Último comando: '+(t.coolers?'LIGADOS':'DESLIGADOS'):'Último comando: --';
+ $$('coolers').nextElementSibling.textContent='O giro dos ventiladores não é monitorado.';
+ $$('aviso').textContent=fresh?(t.airValid?'Temperatura e umidade do ar recebidas da estufa. Atualização a cada dois minutos.':'ESP32 conectada; sensor do ar sem leitura válida.') : t?.status==='stale'?'A última leitura tem mais de cinco minutos. Aguardando nova transmissão.':'Aguardando acesso ao receptor da estufa. Na nova conta, a conexão depende de liberar o novo endereço. O painel atual continua disponível no link acima.';
+ $$('rodape-status').textContent=fresh?'LEITURA REAL · NOVAS SONDAS A INSTALAR':'AGUARDANDO LEITURA REAL';
  renderFornadaHistory();
  $$('close-batch').disabled=!b||b.status==='closed';
  syncControls();
@@ -283,9 +264,9 @@ setInterval(render,60000);
 
 $$('batch-form').addEventListener('input',()=>{$$('batch-form').dataset.dirty='1';});
 $$('sync-login').onclick=()=>{if(cloudToken){if($$('batch-form').dataset.dirty||physicalDirty){say('Há alterações não salvas. Salve a fornada antes de bloquear a edição.');go('fornada');return;}cloudToken='';resetForm();syncStatus='Edição bloqueada neste aparelho.';render();return;}$$('sync-password').value='';$$('sync-auth-message').textContent='';$$('sync-auth').showModal();$$('sync-password').focus();};
-$$('sync-auth-cancel').onclick=()=>{acaoAposLogin=null;window.configPendente=false;$$('sync-password').value='';$$('sync-auth').close();};
+$$('sync-auth-cancel').onclick=()=>{$$('sync-password').value='';$$('sync-auth').close();};
 $$('sync-auth-form').onsubmit=async e=>{e.preventDefault();const token=$$('sync-password').value;$$('sync-auth-submit').disabled=true;
- try{await cloud.unlock(token);cloudToken=token;window.dispatchEvent(new CustomEvent('fabrica-authorized',{detail:token}));$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();if(window.configPendente){window.configPendente=false;go('configuracoes');}if(acaoAposLogin){const action=acaoAposLogin;acaoAposLogin=null;await action();}}
+ try{await cloud.unlock(token);cloudToken=token;$$('sync-password').value='';$$('sync-auth').close();await refreshCloud();}
  catch(e){$$('sync-auth-message').textContent=e.status===401?'Senha incorreta.':e.status===503?'A edição ainda não foi configurada no receptor.':'Não foi possível liberar a edição. Tente novamente.';}
  finally{$$('sync-auth-submit').disabled=false;}
 };
@@ -297,72 +278,3 @@ window.addEventListener('online',refreshCloud);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCloud();});
 setInterval(()=>{if(!document.hidden&&!$$('sync-auth').open)refreshCloud();},15000);
 refreshCloud();
-
-
-function atualizarConfirmacaoCooler(t){
- const manual=pedidoCooler&&t?.coolerCommandId!==pedidoCooler.id?pedidoCooler.mode:t?.coolerMode;
- const auto=document.getElementById('cooler-auto'),button=document.getElementById('cooler-manual');
- if(!auto||!button)return;
- auto.setAttribute('aria-pressed',String(manual==='auto'));
- button.setAttribute('aria-pressed',String(manual==='on'||manual==='off'));
- button.textContent=manual==='on'?'Manual · Ligado':manual==='off'?'Manual · Desligado':'Manual';
- const status=document.getElementById('cooler-command-status');
- if(!pedidoCooler){status.textContent='';return;}
- const confirmed=t?.status==='online'&&t.coolerCommandId===pedidoCooler.id&&t.coolerMode===pedidoCooler.mode;
- status.textContent=confirmed?'Confirmado pela ESP32.':'Aguardando confirmação…';
-}
-function solicitarConfiguracoes(){
- if(cloudToken){window.configPendente=false;go('configuracoes');return;}
- window.configPendente=true;
- if(!document.getElementById('sync-auth').open)document.getElementById('sync-login').click();
-}
-function autorizarAcaoCooler(action){
- if(cloudToken){action();return;}
- acaoAposLogin=action;
- document.getElementById('sync-login').click();
-}
-function horaCooler(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
-function minutoCooler(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s))return NaN;const [h,m]=s.split(':').map(Number);return h*60+m;}
-async function enviarCoolerSimples(payload){
- if(envioCooler)return false;
- envioCooler=true;
- const ids=['cooler-auto','cooler-manual','cooler-dialog-confirm'];ids.forEach(id=>document.getElementById(id).disabled=true);
- const status=document.getElementById('cooler-command-status'),error=document.getElementById('cooler-dialog-error');error.textContent='';status.textContent='Enviando…';
- const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
- try{
-  const response=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken},body:JSON.stringify(payload),signal:abort.signal,cache:'no-store',credentials:'omit'});
-  const data=await response.json();if(!response.ok)throw Error(response.status===401?'Entre novamente para autorizar.':'Não foi possível enviar. Tente novamente.');
-  if(!data.command?.id||!['on','off','auto'].includes(data.command.mode))throw Error('Resposta inválida do controle.');
-  pedidoCooler=data.command;atualizarConfirmacaoCooler(state.telemetry);return true;
- }catch(e){status.textContent=e.name==='AbortError'?'Envio não confirmado. Confira o estado antes de repetir.':e.message;error.textContent=status.textContent;return false;}
- finally{clearTimeout(timer);envioCooler=false;ids.forEach(id=>document.getElementById(id).disabled=false);}
-}
-async function abrirProgramacaoSimples(){
- const dialog=document.getElementById('cooler-dialog'),error=document.getElementById('cooler-dialog-error');
- error.textContent='Carregando…';document.getElementById('cooler-dialog-confirm').disabled=true;dialog.showModal();
- const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
- try{
-  const response=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{headers:{Authorization:'Bearer '+cloudToken},cache:'no-store',signal:abort.signal});const data=await response.json();
-  const c=data.command;if(!response.ok||!Number.isInteger(c?.start)||!Number.isInteger(c?.end)||!Number.isInteger(c?.days))throw Error('Não foi possível carregar a programação. Feche e tente novamente.');
-  document.getElementById('cooler-start').value=horaCooler(c.start);document.getElementById('cooler-end').value=horaCooler(c.end);
-  document.querySelectorAll('[data-cooler-day]').forEach(input=>input.checked=!!(c.days&(1<<Number(input.dataset.coolerDay))));
-  error.textContent='';document.getElementById('cooler-dialog-confirm').disabled=false;
- }catch(e){error.textContent=e.message;}finally{clearTimeout(timer);}
-}
-document.getElementById('cooler-auto').onclick=()=>autorizarAcaoCooler(abrirProgramacaoSimples);
-document.getElementById('cooler-manual').onclick=()=>autorizarAcaoCooler(()=>{
- const mode=pedidoCooler?.mode??state.telemetry?.coolerMode;
- return enviarCoolerSimples({mode:mode==='on'?'off':'on'});
-});
-document.getElementById('cooler-dialog-cancel').onclick=()=>document.getElementById('cooler-dialog').close();
-document.getElementById('cooler-dialog-confirm').onclick=async()=>{
- const start=minutoCooler(document.getElementById('cooler-start').value),end=minutoCooler(document.getElementById('cooler-end').value);
- const days=[...document.querySelectorAll('[data-cooler-day]:checked')].reduce((mask,input)=>mask|(1<<Number(input.dataset.coolerDay)),0);
- if(!Number.isInteger(start)||!Number.isInteger(end)||start===end){document.getElementById('cooler-dialog-error').textContent='Informe horários de início e término diferentes.';return;}
- if(days===0){document.getElementById('cooler-dialog-error').textContent='Escolha pelo menos um dia.';return;}
- if(await enviarCoolerSimples({mode:'auto',start,end,days}))document.getElementById('cooler-dialog').close();
-};
-
-for(const el of document.querySelectorAll('[form="batch-form"]'))el.addEventListener('input',()=>document.getElementById('batch-form').dataset.dirty='1');
-
-document.getElementById('sync-auth').addEventListener('close',()=>{if(!cloudToken){acaoAposLogin=null;window.configPendente=false;}});

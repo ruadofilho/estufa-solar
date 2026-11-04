@@ -1,4 +1,4 @@
-/* Planejador v0.7.2: previsão condicional com ciclo medido, ainda sem validação experimental. */
+/* Planejador automático v0.2: estimativa energética preliminar, não modelo cinético validado. */
 (function(root){
 const M=typeof module!=='undefined'&&module.exports?require('./model.js'):root.EstufaModel;
 const DAY=86400000,MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -37,11 +37,14 @@ function forecast(b,c,obs=[],now=Date.now(),environment={}){
  if(history.mc<=Number(b.target))return {...common,status:'estimatedTarget',message:'Meta estimada pelo modelo; confirmar na madeira.'};
  // O relógio é ancorado nos dados, não reduz horas com o mero passar do calendário.
  const anchor=Math.max(start,last?.epoch??start,measurement?.epoch??start);
- const cycle=D.observedCycle(environment.air||[],c,environment.weather,anchor,irradiation);
- const central=cycle.valid?D.forecastObserved(history.mc,b,c,anchor,parameters,irradiation,environment.weather,cycle):D.forecastFuture(history.mc,b,c,anchor,parameters,irradiation,environment.weather,history.last?.t);
- if(!Number.isFinite(central.hours))return {...common,status:'conditions',approach:cycle.valid?'observed-cycle':'thermal-provisional',message:'Sem prazo calculável para a meta sob estas condições. Isso não prevê 180 dias de secagem; o modelo não encontrou a chegada à meta.'};
- const days=Math.ceil(central.hours/24),arrival=anchor+central.hours*D.HOUR;
- return {...common,status:'forecast',low:days,high:days,central:days,anchor,earliest:arrival,latest:arrival,conditional:true,approach:cycle.valid?'observed-cycle':'thermal-provisional',profileCoverage:cycle.coverage,provisional:true,forecastSource:(cycle.valid?'Ciclo real de 24 h + ajuste meteorológico. ':'Cenário térmico inicial; falta ciclo real completo. ')+(environment.weather?.size?'Meteorologia horária disponível; médias mensais fora da cobertura.':'Médias mensais externas, sem previsão horária disponível.'),message:'Estimativa condicional. Incerteza dos coeficientes ainda não quantificada; não é uma data garantida.'};
+ const lowP={...parameters,diffusivity:parameters.diffusivity*2,solarFactor:Math.min(.95,parameters.solarFactor*1.49),circulation:Math.min(1000,parameters.circulation*2)};
+ const highP={...parameters,diffusivity:parameters.diffusivity*.5,solarFactor:Math.max(.1,parameters.solarFactor*.436),circulation:parameters.circulation*.5};
+ const optimistic=D.forecastFuture(history.mc,b,c,anchor,lowP,irradiation,environment.weather,history.last?.t);
+ const conservative=D.forecastFuture(history.mc,b,c,anchor,highP,irradiation,environment.weather,history.last?.t);
+ const central=D.forecastFuture(history.mc,b,c,anchor,parameters,irradiation,environment.weather,history.last?.t);
+ if(optimistic.hours===null)return {...common,status:'conditions',message:'A meta não é alcançada em 180 dias no cenário atual. Revise as condições de secagem.'};
+ const low=optimistic.days,high=conservative.days;
+ return {...common,status:'forecast',low,high,central:central.days,anchor,earliest:anchor+optimistic.hours*D.HOUR,latest:conservative.hours===null?null:anchor+conservative.hours*D.HOUR,provisional:true,forecastSource:environment.weather?.size?'Meteorologia horária disponível; médias mensais fora da cobertura':'Cenário de médias mensais externas',message:'Estimativa pelo histórico do ar; cinética e vazões ainda não calibradas.'};
 }
 const api={climateValid,irradiation,forecast};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EstufaPlanner=api;
