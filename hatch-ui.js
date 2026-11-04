@@ -44,7 +44,9 @@
    </div>
    <div class="hatch-explanation" aria-live="polite" aria-atomic="true">
     <p id="hatch-result"><b>Consulte antes de abrir ou fechar.</b></p>
-    <p id="hatch-calculation">O cálculo usa as leituras da última hora e a previsão de chuva.</p>
+    <p id="hatch-drying" hidden></p>
+    <p id="hatch-opening" hidden></p>
+    <p id="hatch-calculation">O cálculo usa as leituras recentes dos dois sensores e a previsão de chuva.</p>
    </div>
    <p>Consulte quando o tempo mudar ou antes de mexer nas escotilhas. Os avisos automáticos têm horários próprios. O ajuste é manual.</p>
   </div>`;
@@ -104,6 +106,7 @@
    clearTimeout(checkExpiry);
    $('result').textContent='Posição atualizada. Verifique novamente quando precisar.';
    $('calculation').textContent='';
+   clearExplanation();
    note(position==='ABRIR'?'Posição registrada como abertas.':'Posição registrada como fechadas.');
   }catch(e){
    await refresh();
@@ -111,12 +114,40 @@
   }finally{saving=false;updateButtons();}
  }
  let checkExpiry;
+ function explainDrying(metrics,readings){
+  const measured=(Array.isArray(readings)?readings:[])
+   .filter(r=>r?.meter==='Extech MO230'&&r.valid===true&&Number.isFinite(r.mc)&&Number.isFinite(r.epoch))
+   .sort((a,b)=>b.epoch-a.epoch);
+  const latest=measured[0];
+  const previous=latest?.woodGroup&&measured.find(r=>r.epoch<latest.epoch&&r.woodGroup===latest.woodGroup);
+  const equilibrium=Number.isFinite(metrics.insideEMC)?metrics.insideEMC:null;
+  let drying='Mesmo fechada, a estufa pode secar a madeira. O calor ajuda a retirar água das tábuas enquanto o ar interno estiver mais seco que o necessário para mantê-las na umidade atual.';
+  if(equilibrium!==null){
+   drying='Mesmo fechada, a estufa pode secar a madeira. Com o ar interno medido, as tábuas tenderiam a '+number.format(equilibrium)+'% se essas condições persistissem.';
+   if(latest){
+    const tendency=latest.mc>equilibrium?'O ar interno favorece a secagem.':latest.mc<equilibrium?'O ar interno pode favorecer a reabsorção de umidade.':'A última medição está no nível de equilíbrio estimado.';
+    drying+=' A última medição do lote com o Extech foi '+number.format(latest.mc)+'%. '+tendency;
+   }else drying+=' Para saber se o lote está secando, compare esse valor com uma medição do Extech.';
+  }
+  if(previous){
+   const change=latest.mc-previous.mc;
+   drying+=change<0?' Nas duas últimas leituras comparáveis, a umidade medida caiu '+number.format(-change)+' ponto(s) percentual(is).':change>0?' Nas duas últimas leituras comparáveis, a umidade medida subiu '+number.format(change)+' ponto(s) percentual(is).':' As duas últimas leituras comparáveis deram o mesmo valor.';
+  }
+  const incoming=number.format(metrics.incomingEMC);
+  const exchange=metrics.insideAH>metrics.outsideAH?'O ar externo tem menos vapor e pode ajudar a retirar água da estufa. ':'Nesta consulta, o ar externo não tem menos vapor que o interno. ';
+  const opening=exchange+'Ao entrar e aquecer, esse ar levaria a madeira a tender a '+incoming+'% de umidade. '+(metrics.incomingEMC<8?'Esse valor está abaixo do mínimo de 8% usado na regra de abertura. O ar muito seco pode fazer a superfície perder água mais rápido que o interior, aumentando o risco de rachaduras e empenamento.':'Esse valor descreve o potencial de secagem. A recomendação também depende da persistência das condições e da previsão de chuva.');
+  return {drying,opening};
+ }
+ function clearExplanation(){
+  for(const id of ['drying','opening']){$(id).hidden=true;$(id).textContent='';}
+ }
  const number=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1});
  const time=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'});
  $('check').onclick=async()=>{
   clearTimeout(checkExpiry);
   $('check').disabled=true;
   $('result').textContent='Calculando…';
+  clearExplanation();
   $('calculation').textContent='';
   try{
    const result=await api('/avaliar');
@@ -128,11 +159,17 @@
    }
    const position=result.position;
    const title=result.action==='ABRIR'?'Abra as escotilhas':result.action==='FECHAR'?'Feche as escotilhas':position==='ABRIR'?'Mantenha abertas':position==='FECHAR'?'Mantenha fechadas':'Nenhuma mudança indicada. Confira a posição na estufa.';
-   $('result').textContent=title+'. '+result.reason;
+   const reason=result.action==='MANTER'&&result.reason==='Sem benefício significativo para alterar.'&&m.incomingEMC<8
+    ?'O ar externo aquecido ficou abaixo do limite usado para abrir.':result.reason;
+   $('result').textContent=title+'. '+reason;
+   const lot=typeof active==='function'&&window.configLiberada?active():null;
+   const explanation=explainDrying(m,lot?.referenceReadings);
+   for(const id of ['drying','opening']){$(id).textContent=explanation[id];$(id).hidden=false;}
    const delta=m.insideAH-m.outsideAH;
-   $('calculation').textContent='Última hora: '+number.format(m.insideAH)+' g/m³ dentro − '+number.format(m.outsideAH)+' g/m³ fora = '+number.format(delta)+' g/m³. Equilíbrio estimado com o ar externo aquecido: '+number.format(m.incomingEMC)+'%. Amostra '+time.format(result.sampleAt)+' · cálculo '+time.format(result.at)+'.';
+   $('calculation').textContent='Leituras usadas: '+number.format(m.insideAH)+' g/m³ dentro − '+number.format(m.outsideAH)+' g/m³ fora = '+number.format(delta)+' g/m³. Equilíbrio estimado com o ar externo aquecido: '+number.format(m.incomingEMC)+'%. Amostra '+time.format(result.sampleAt)+' · cálculo '+time.format(result.at)+'.';
    checkExpiry=setTimeout(()=>{
     $('result').textContent='A orientação anterior expirou. Verifique de novo.';
+    clearExplanation();
     $('calculation').textContent='';
    },300000);
   }catch{
