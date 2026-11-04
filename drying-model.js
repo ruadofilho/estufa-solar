@@ -63,7 +63,9 @@ function integrate(b,c,rows,wood=[],options={}){
   while(wi<wr.length&&wr[wi].epoch<=left){mc=wr[wi].mc;ref=wr[wi].epoch;wi++;}
   while(left<right){
    const stop=Math.min(right,left+5*60000,wi<wr.length&&wr[wi].epoch>left?wr[wi].epoch:Infinity),mid=(left+stop)/2,f=(mid-a.epoch)/rawDt;
-   const ext=outside(c,options.weather,mid);if(!Number.isFinite(ext.outT)||!Number.isFinite(ext.outRH)){left=stop;continue;}
+   const measured=r=>Number.isFinite(r.outT)&&Number.isFinite(r.outRH)&&r.outT>=-40&&r.outT<=60&&r.outRH>=0&&r.outRH<=100;
+   const external=measured(a)&&measured(z)?{outT:a.outT+(z.outT-a.outT)*f,outRH:a.outRH+(z.outRH-a.outRH)*f}:measured(a)?a:measured(z)?z:null;
+   const ext=external?{outT:external.outT,outRH:external.outRH,source:'DHT11'}:outside(c,options.weather,mid);if(!Number.isFinite(ext.outT)||!Number.isFinite(ext.outRH)){left=stop;continue;}
    const e={t:a.t+(z.t-a.t)*f,rh:a.rh+(z.rh-a.rh)*f,...ext,fans:typeof a.coolers==='boolean'?a.coolers:fanSchedule(mid),woodT:Number.isFinite(a.woodT)?a.woodT:undefined};
    const s=step(mc,b,e,(stop-left)/HOUR,p,last);if(!s.unusable){mc=s.mc;loss+=s.loss;gain+=s.gain;covered+=stop-left;last={...e,eq:s.eq,limit:s.limit,epoch:stop,rhoV:(101325-e.rh/100*saturation(e.t))/(287.05*(e.t+273.15))*ratio(e.t,e.rh)};
     const day=new Date(mid-3*HOUR).toISOString().slice(0,10);days[day]??={loss:0,gain:0,hours:0};days[day].loss+=s.loss;days[day].gain+=s.gain;days[day].hours+=(stop-left)/HOUR;
