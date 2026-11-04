@@ -5,8 +5,22 @@ if(!svg||!wind)return;
 const ns='http://www.w3.org/2000/svg';
 function node(tag,attrs={},parent){const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(parent)parent.append(e);return e;}
 const sky=node('g',{'aria-hidden':'true'});
-sky.innerHTML='<defs><linearGradient id="garden-sky" x2="0" y2="1"><stop stop-color="#263157"/><stop offset="1" stop-color="#55587d"/></linearGradient><filter id="firefly-glow"><feGaussianBlur stdDeviation="2"/></filter></defs><rect width="400" height="220" fill="url(#garden-sky)"/><path fill="#e4cc99" d="M55 24h10v3h-6v4h-4v9h4v4h6v3H55v-3h-6v-4h-3v-9h3v-4h6z"/><path fill="#e5d3a9" d="M25 61h2v2h-2zm95-35h2v2h-2zm42 31h2v2h-2zm53-36h2v2h-2zm63 30h2v2h-2zm38 24h2v2h-2zm63-25h2v2h-2z"/><path fill="#626889" d="M12 82h28v-4h22v4h21v4H12zm230 0h21v-5h28v5h22v4h-71z"/><path fill="#464f72" d="M0 187h29v-12h22v-9h39v10h28v44H0zm187 0h32v-12h31v-10h29v7h30v-13h32v8h30v11h29v42H187z"/><path fill="#456c64" d="M0 201h400v19H0z"/><path fill="#628675" d="M0 201h400v4H0z"/>';
+sky.innerHTML='<defs><linearGradient id="garden-sky" x2="0" y2="1"><stop class="sky-top" stop-color="#263157"/><stop class="sky-bottom" offset="1" stop-color="#55587d"/></linearGradient><filter id="firefly-glow"><feGaussianBlur stdDeviation="2"/></filter></defs><rect width="400" height="220" fill="url(#garden-sky)"/><path class="sky-moon" fill="#e4cc99" d="M55 24h10v3h-6v4h-4v9h4v4h6v3H55v-3h-6v-4h-3v-9h3v-4h6z"/><path class="sky-stars" fill="#e5d3a9" d="M25 61h2v2h-2zm95-35h2v2h-2zm42 31h2v2h-2zm53-36h2v2h-2zm63 30h2v2h-2zm38 24h2v2h-2zm63-25h2v2h-2z"/><path class="sky-sun" fill="#ffe39b" d="M48 29h15v4h5v15h-5v4H48v-4h-5V33h5z"/><path fill="#464f72" d="M0 187h29v-12h22v-9h39v10h28v44H0zm187 0h32v-12h31v-10h29v7h30v-13h32v8h30v11h29v42H187z"/><path fill="#456c64" d="M0 201h400v19H0z"/><path fill="#628675" d="M0 201h400v4H0z"/>';
 svg.prepend(sky);
+const clouds=node("g",{class:"sky-clouds"},sky);
+const cloudShape="M0 25v-8h12v-7h15V4h24v5h17v7h17v9z";
+for(const [x,y,scale] of [[5,25,1],[135,37,1.25],[280,18,1.1],[375,45,1.15],[520,25,1],[650,37,1.25],[795,18,1.1],[890,45,1.15]]){
+ const group=node("g",{transform:"translate("+x+" "+y+") scale("+scale+")"},clouds);
+ node("path",{d:cloudShape},group);
+ node("path",{d:"M0 23h85v2H0z",class:"cloud-shadow"},group);
+}
+const precipitation=node("g",{class:"sky-precipitation"},sky);
+for(let i=0;i<30;i++){
+ const x=(i*53)%400,y=53+(i*31)%145;
+ node("path",{d:"M"+x+" "+y+"l-5 11",class:"rain-drop"},precipitation);
+ node("rect",{x,y,width:2,height:2,class:"snow-flake"},precipitation);
+}
+const fog=node("path",{class:"sky-fog",d:"M0 91h125m43 0h180m-90 17h142M0 124h186m40 0h174"},sky);
 const clock=svg.querySelector('.scene-clock');
 const garden=node('g',{'aria-hidden':'true'});
 svg.insertBefore(garden,clock);
@@ -61,10 +75,10 @@ const fireflies=Array.from({length:6},(_,i)=>{
  node('rect',{x:-1,y:-1,width:2,height:2,fill:'#fff1a6'},g);
  return g;
 });
-const owl=node('g',{id:'scene-owl',role:'img','aria-label':'Coruja curiosa entre o telhado e a árvore'});
+const owl=node('g',{id:'scene-owl',role:'img','aria-label':'Coruja pousada no telhado',transform:'translate(107 80)'});
 svg.insertBefore(owl,clock);
-owl.innerHTML='<g class="owl-wings" fill="#ab82a9"><path d="M-9-13l-15-8v6l5 5 10 4zm18 0l15-8v6l-5 5-10 4z"/></g><path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-6-10H6v9H-6z" fill="#efccbd"/><path d="M-7-1h5v3h-5zm9 0h5v3H2z" fill="#efb86c"/><g class="owl-head"><path d="M-10-15v-11l6 4h8l6-4v11l-3 3H-7z" fill="#c79cb8"/><path d="M-8-21H8v7H-8z" fill="#fff4d8"/><path class="owl-pupils" d="M-6-20h2v4h-2zm10 0h2v4H4z" fill="#344057"/><path class="owl-blink" d="M-7-18h5v1h-5zm9 0h5v1H2z" fill="#344057"/><path d="M-2-15h4l-2 3z" fill="#eaa658"/></g>';
-const wings=owl.querySelector('.owl-wings'),head=owl.querySelector('.owl-head'),pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
+owl.innerHTML='<path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-6-10H6v9H-6z" fill="#efccbd"/><path d="M-7-1h5v3h-5zm9 0h5v3H2z" fill="#efb86c"/><g class="owl-head"><path d="M-10-15v-11l6 4h8l6-4v11l-3 3H-7z" fill="#c79cb8"/><path d="M-8-21H8v7H-8z" fill="#fff4d8"/><path class="owl-pupils" d="M-6-20h2v4h-2zm10 0h2v4H4z" fill="#344057"/><path class="owl-blink" d="M-7-18h5v1h-5zm9 0h5v1H2z" fill="#344057"/><path d="M-2-15h4l-2 3z" fill="#eaa658"/></g>';
+const pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
 const routes=[
  'M116 108Q121 95 131 104L175 129Q185 134 182 150Q173 162 152 149L121 132Q111 126 116 108Z',
  'M116 148Q130 135 147 145L176 157Q186 163 183 179Q179 189 162 186L125 178Q113 173 116 148Z',
@@ -79,25 +93,10 @@ const motion=matchMedia('(prefers-reduced-motion: reduce)');
 let frame=0,last=-Infinity;
 function draw(now){
  drawGarden(now);
- const still=motion.matches,t=still?0:(now/1000)%60;
- // Roof: blink and look around. Fly to the bush, hop along its branch,
- // inspect a leaf, then take the long way home. Fireflies run independently.
- let x=107,y=80,tilt=0,flying=false;
- if(t<13){tilt=t>3&&t<9?8*Math.sin((t-3)*1.2):0;}
- else if(t<20){const u=(t-13)/7;flying=true;x=107+169*u;y=80+75*u-51*Math.sin(Math.PI*u);}
- else if(t<39){x=276;y=155;
-  if(t>=23&&t<24.1){const u=(t-23)/1.1;x+=9*u;y-=5*Math.sin(Math.PI*u);}
-  else if(t>=24.1&&t<32){x+=9;tilt=11*Math.sin((t-24.1)*.9);}
-  else if(t>=32&&t<33){const u=t-32;x+=9*(1-u);y-=4*Math.sin(Math.PI*u);}
-  else if(t>=33){tilt=-6*Math.sin((t-33)*1.1);}
- }else if(t<48){const u=(t-39)/9;flying=true;x=276-169*u;y=155-75*u-77*Math.sin(Math.PI*u);}
- else if(t<52){tilt=6*Math.sin((t-48)*2);}
- const shut=!still&&!flying&&(t%6.7<.16||(t>50&&t<50.5));
- owl.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
- head.setAttribute('transform','rotate('+tilt.toFixed(2)+' 0 -15)');
- pupils.setAttribute('opacity',shut?'0':'1');blink.setAttribute('opacity',shut?'1':'0');
- wings.setAttribute('opacity',flying?'1':'0');
- wings.setAttribute('transform','scale(1 '+(1+.44*Math.sin(t*27)).toFixed(2)+')');
+ const still=motion.matches;
+ const shut=!still&&(now%6700<170);
+ pupils.setAttribute("opacity",shut?"0":"1");
+ blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
   const u=still?0:now/1000,x0=[35,68,230,256,324,367][i];
   g.setAttribute('transform','translate('+(x0+9*Math.sin(u*.73+i)).toFixed(2)+' '+(180+(i%3)*9+8*Math.cos(u*.82+i*2)).toFixed(2)+')');
@@ -123,6 +122,13 @@ async function refreshWeather(){
   const code=current?.weather_code;
   isNight=current?.is_day===0;
   weather=!Number.isFinite(code)?null:code===0?'Céu limpo':code<=2?'Parcialmente nublado':code===3?'Nublado':code<=48?'Neblina':code>=95?'Trovoadas':code>=71&&code<=77?'Neve':'Chuva';
+  if(Number.isFinite(code)){
+   const snow=(code>=71&&code<=77)||code===85||code===86;
+   const condition=code===0?"clear":code===1||code===2?"partly":code===3?"cloudy":code===45||code===48?"fog":snow?"snow":"rain";
+   svg.dataset.weather=condition;
+   svg.dataset.day=current.is_day===1?"true":"false";
+   if(snow)weather="Neve";
+  }
   caption();
  }catch{}
 }

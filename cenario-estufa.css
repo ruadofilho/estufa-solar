@@ -7,5 +7,43 @@
 }
 .masthead-brand{display:flex;align-items:center;gap:12px}
 .masthead-brand .brand-piano{width:clamp(48px,8vw,82px);height:auto;flex:none}
+.owl-scene{position:relative;width:100%;max-width:720px}
+.piano-shop{
+ position:absolute;left:2.5%;top:3%;padding:4px 3px;
+ font:bold clamp(9px,1.1vw,14px)/1.15 "Courier New",monospace;
+ color:#ffb2ad;text-decoration:none;white-space:nowrap;
+ text-shadow:0 0 2px #42100f,0 0 3px #941b18,0 0 6px #f14942;
+}
+.owl-scene:has(svg[data-day="true"]) .piano-shop{
+ color:#e0f4ff;text-shadow:0 0 2px #082550,0 0 3px #144e96,0 0 6px #1266cc;
+}
+.piano-shop:hover{text-decoration:underline}
+.piano-shop:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.kiln-intro{max-width:66ch;margin:.4rem 0 0;line-height:1.55}
+.sky-sun,.sky-clouds,.sky-precipitation,.sky-fog,.rain-drop,.snow-flake{display:none}
+[data-day="true"] .sky-top{stop-color:#619dc1}
+[data-day="true"] .sky-bottom{stop-color:#b8d7df}
+[data-day="true"] :is(.sky-moon,.sky-stars){display:none}
+[data-day="true"]:is([data-weather="clear"],[data-weather="partly"]) .sky-sun{display:inline}
+[data-weather]:not([data-weather="clear"]) .sky-clouds{
+ display:inline;fill:#969db2;animation:cloud-crossing 105s linear infinite;
+}
+[data-day="true"] .sky-clouds{fill:#d5dbe1}
+[data-day="true"]:is([data-weather="cloudy"],[data-weather="rain"],[data-weather="snow"],[data-weather="fog"]) .sky-top{stop-color:#7c8a9c}
+[data-day="true"]:is([data-weather="cloudy"],[data-weather="rain"],[data-weather="snow"],[data-weather="fog"]) .sky-bottom{stop-color:#b3bec8}
+[data-weather="partly"] .sky-clouds{opacity:.65}
+[data-weather]:not([data-weather="clear"]):not([data-weather="partly"]) :is(.sky-moon,.sky-stars){opacity:.12}
+.cloud-shadow{fill:#3b4c66;opacity:.24}
+[data-weather="rain"] :is(.sky-precipitation,.rain-drop),
+[data-weather="snow"] :is(.sky-precipitation,.snow-flake),
+[data-weather="fog"] .sky-fog{display:inline}
+.sky-precipitation{opacity:.55;animation:weather-fall .95s linear infinite}
+.rain-drop{stroke:#9bcef0;stroke-width:1.4}
+.snow-flake{fill:#f3fbff}
+.sky-fog{stroke:#e0e5ec;stroke-width:5;opacity:.36}
+@keyframes cloud-crossing{to{transform:translateX(-515px)}}
+@keyframes weather-fall{from{transform:translateY(-18px)}to{transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.sky-clouds,.sky-precipitation{animation:none!important}}
+@media(max-width:560px){#painel>.intro{flex-wrap:wrap}}
 #sky-caption{text-align:center}
 #scene-clock-colon{opacity:1!important}
