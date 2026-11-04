@@ -103,13 +103,14 @@ function renderKilnLoad(){
  const rows=Math.ceil(visible/2);
  const step=Math.min(10,36/Math.max(1,rows-1));
  const height=Math.min(6,step*0.65);
- const boards=[];
+ const boards=[],spacers=[];
  for(let i=0;i<visible;i++){
   const x=i%2===0?117:153;
-  const y=(190-height-Math.floor(i/2)*step).toFixed(2);
-  boards.push('<rect x="'+x+'" y="'+y+'" width="29" height="'+height.toFixed(2)+'"/>');
+  const y=190-height-Math.floor(i/2)*step;
+  boards.push('<rect x="'+x+'" y="'+y.toFixed(2)+'" width="29" height="'+height.toFixed(2)+'"/>');
+  if(i>=2)for(const offset of [3,22])spacers.push('<rect x="'+(x+offset)+'" y="'+(y+height).toFixed(2)+'" width="4" height="'+(step-height).toFixed(2)+'"/>');
  }
- wood.innerHTML=visible?'<path d="M119 190v8m24-8v8'+(visible>1?'m12-8v8m24-8v8':'')+'" stroke="#596d6d" stroke-width="4"/><g fill="#dfa96d" stroke="#87543b" stroke-width="'+Math.min(2,step*0.25)+'">'+boards.join('')+'</g>':'';
+ wood.innerHTML=visible?'<path d="M119 190v8m24-8v8'+(visible>1?'m12-8v8m24-8v8':'')+'" stroke="#596d6d" stroke-width="4"/><g fill="#785339" class="wood-spacers">'+spacers.join('')+'</g><g fill="#dfa96d" stroke="#87543b" stroke-width="'+Math.min(1.4,step*0.21)+'">'+boards.join('')+'</g>':'';
  $$('kiln-load').textContent=!canonical?'Aguardando lote sincronizado…':count===0?'Estufa vazia':count===1?'1 tábua no lote':count.toLocaleString('pt-BR')+' tábuas no lote'+(count>visible?' · desenho ilustrativo':'');
 }
 
@@ -117,7 +118,6 @@ function render(){
  renderKilnLoad();
  const b=active(),t=state.telemetry;
  window.FabricaSceneTelemetry=t;window.dispatchEvent(new CustomEvent("scene-telemetry",{detail:t}));
- document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online'&&t.airValid===true);
  document.getElementById('kiln-wind')?.classList.toggle('coolers-active',t?.status==='online'&&t.coolers===true);
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';

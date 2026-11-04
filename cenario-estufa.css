@@ -1,0 +1,11 @@
+.mission-art{background:#303a60;color:#f6f0dd}
+.mission-art svg{max-height:none}
+#kiln-wind:not(.coolers-active){display:none}
+#scene-clock-digits,.scene-clock.clock-night #scene-clock-digits{
+ font:bold 17px "Courier New",monospace;fill:#e0ffb9;
+ filter:drop-shadow(0 0 2px #b2ff78) drop-shadow(0 0 5px #80de78);
+}
+.masthead-brand{display:flex;align-items:center;gap:12px}
+.masthead-brand .brand-piano{width:clamp(48px,8vw,82px);height:auto;flex:none}
+#sky-caption{text-align:center}
+#scene-clock-colon{opacity:1!important}
