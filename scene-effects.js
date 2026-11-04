@@ -8,14 +8,12 @@
  const devil=make('g',{id:'kiln-devil',transform:'translate(179 150) scale(.6)',opacity:'0','pointer-events':'none'});
  devil.innerHTML='<path d="M-9-13v-9l6 6h6l6-6v9l3 4v14H-12V-9z" fill="#b95765"/><path d="M-8-11H8V2H-8z" fill="#f2a087"/><path d="M-7-10h5v5h-5zm9 0h5v5H2z" fill="#fff4d8"/><path d="M-5-9h2v3h-2zm8 0h2v3H3zM-5-2h2v2h6v-2h2v4H-5z" fill="#344057"/><path d="M-6 5h4v3h-4zm8 0h4v3H2z" fill="#8c5068"/><path d="M11 2h8v-9h-3l5-6 5 6h-3V6H11z" fill="#b95765"/>';
  side.append(devil);
- const fans=make('g',{id:'scene-cooler-fans','pointer-events':'none'});
- fans.innerHTML=[141,164].map(x=>`<g transform="translate(${x} 136)"><rect x="-6" y="-6" width="12" height="12" fill="#45596b" stroke="#26304c"/><g class="scene-fan-rotor" fill="#b4d9d4"><path d="M-1-1v-4h3v4zm2 0h4v3H1zm0 2v4h-3V1zm-2 0h-4v-3h4z"/><circle r="1.4" fill="#ffe5a1"/></g></g>`).join('');side.append(fans);
  const arrows=side.querySelector('path[d^="M91 108"]');arrows?.classList.add('hatch-air-arrow');
  const style=document.createElement('style');style.textContent=`#kiln-heat,#kiln-devil{transition:opacity 1.5s ease-in-out}.mission-art svg:not([data-hatches="ABRIR"]) .hatch-air-arrow,.mission-art svg:not([data-hatches="ABRIR"]) #kiln-wind{display:none!important}.mission-art svg[data-hatches="ABRIR"] #kiln-wind{display:inline!important;opacity:1!important}.mission-art svg[data-hatches="ABRIR"] .wind-line{opacity:1!important}@media(prefers-reduced-motion:reduce){#kiln-heat,#kiln-devil{transition:none}}`;
  document.head.append(style);
  function hatches(e){svg.dataset.hatches=['ABRIR','FECHAR'].includes(e.detail?.position)?e.detail.position:'unknown';}
  window.addEventListener('hatch-state',hatches);if(window.FabricaHatchState)hatches({detail:window.FabricaHatchState});
- const fanStyle=document.createElement('style');fanStyle.textContent=`.scene-fan-rotor{transform-box:fill-box;transform-origin:center}html[data-scene-coolers="on"] .scene-fan-rotor{animation:scene-fan-spin 1.2s linear infinite}html[data-scene-coolers="on"] .fan>path{animation:scene-fan-spin 1.2s linear infinite;transform-origin:32px 32px}.scene-paused .scene-fan-rotor{animation-play-state:paused!important}@keyframes scene-fan-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.scene-fan-rotor,.fan>path{animation:none!important}}`;document.head.append(fanStyle);
+ const fanStyle=document.createElement('style');fanStyle.textContent=`html[data-scene-coolers="on"] .fan>path{animation:scene-fan-spin 1.2s linear infinite;transform-origin:32px 32px}@keyframes scene-fan-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.fan>path{animation:none!important}}`;document.head.append(fanStyle);
  const telemetry=t=>{const level=heat(t?.airT,t?.airValid===true);tint.setAttribute('opacity',level);devil.setAttribute('opacity',level>0?'1':'0');document.documentElement.dataset.sceneCoolers=t?.status==='online'&&t.coolers===true?'on':'off';};
  window.addEventListener('scene-telemetry',e=>telemetry(e.detail));telemetry(window.FabricaSceneTelemetry);
  }
