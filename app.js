@@ -86,6 +86,9 @@ function render(){
  const b=active(),t=state.telemetry;
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
+ $$('outdoor-temperature').textContent=t?.externalValid?n(t.externalT):'--';
+ $$('outdoor-humidity').textContent=t?.externalValid?n(t.externalRH):'--';
+ $$('outdoor-status').textContent=t?.externalValid?'DHT11 · ar fora da estufa':fresh?'DHT11 · sem leitura externa válida':'DHT11 · aguardando leitura atual';
  $$('wood-temperature').textContent=t?.woodTempValid?n(t.woodTemp):'--';$$('wood-moisture').textContent=t?.woodValid?n(t.woodMC):'--';
  $$('wood-status').textContent=t?.woodValid?'Leitura da sonda calibrada':'Sem leitura direta da madeira; veja a estimativa abaixo.';
  $$('badge').className='badge';$$('conexao').textContent=fresh?'ESTUFA CONECTADA':t?.status==='stale'?'LEITURA ANTIGA':t?.status==='loading'?'CONECTANDO':'SEM CONEXÃO';
