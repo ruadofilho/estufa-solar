@@ -26,22 +26,43 @@
  .hatch-settings h3 #hatch-close{margin-left:auto;min-height:22px;padding:0 6px}
  #hatch-manage{font-size:11px;padding:4px 8px;min-height:28px}
  #hatch-panel-reason{max-width:340px;font-size:12px;line-height:1.5;color:#4f5868;margin:0;text-align:right}.hatch-quality-guide{grid-column:1/-1;padding:10px;background:#fffbed}.hatch-quality-guide summary{font:700 12px Courier New,monospace}.hatch-quality-guide p{margin:10px 0}.hatch-explanation{grid-column:1/-1;padding:10px;background:#fffbed;border:2px groove #faf9ff}.hatch-explanation p:last-child{margin-bottom:0}
+ .hatch-check{margin-top:16px}
+ .hatch-check #hatch-result{font-size:18px;font-weight:bold;margin-bottom:5px}
+ .hatch-check #hatch-check{background:#433a89;color:white;font-weight:bold}
+ .hatch-check #hatch-panel-position{font-weight:bold;margin:0}
+ .hatch-check p:last-child{margin-bottom:0}
  @media(max-width:720px){.hatch-status-stack{align-items:flex-start}#hatch-panel-reason{text-align:left}.hatch-indicator{justify-content:flex-start}.hatch-settings-body{grid-template-columns:1fr;padding:12px;gap:12px}.hatch-settings .hatch-buttons button{flex:1}}
  `;
  document.head.append(style);
- const box=document.createElement('div');box.className='hatch-indicator';
- box.innerHTML='<strong role="status" id="hatch-action">CONSULTANDO ESCOTILHAS</strong><button type="button" id="hatch-manage">Ver escotilhas</button>';
  const intro=document.querySelector('#painel .intro');
- const stack=document.createElement('div');stack.className='hatch-status-stack';
- const badge=intro?.querySelector('#badge');if(badge)stack.append(badge);stack.append(box);const panelReason=document.createElement('p');panelReason.id='hatch-panel-reason';panelReason.setAttribute('role','status');stack.append(panelReason);(intro||document.body).append(stack);
+ const check=document.createElement('section');
+ check.className='hatch-settings hatch-check';
+ check.setAttribute('aria-labelledby','hatch-check-title');
+ check.innerHTML=`
+  <h3 id="hatch-check-title">Escotilhas · decisão de agora</h3>
+  <div class="hatch-settings-body">
+   <p id="hatch-panel-position">Posição registrada: consultando…</p>
+   <div class="hatch-buttons">
+    <button type="button" id="hatch-check" disabled>Verificar agora</button>
+    <button type="button" id="hatch-manage">Registrar posição</button>
+   </div>
+   <div class="hatch-explanation" aria-live="polite" aria-atomic="true">
+    <p id="hatch-result"><b>Consulte antes de abrir ou fechar.</b></p>
+    <p id="hatch-calculation">O cálculo usa as leituras da última hora e a previsão de chuva.</p>
+   </div>
+   <p>Consulte quando o tempo mudar ou antes de mexer nas escotilhas. Os avisos automáticos têm horários próprios. O ajuste é manual.</p>
+  </div>`;
+ if(intro)intro.after(check);
+ else document.body.prepend(check);
  const settings=document.createElement('article');settings.className='hatch-settings';settings.setAttribute('aria-labelledby','hatch-settings-title');
- settings.innerHTML='<h3 id="hatch-settings-title"><span class="hatch-window-icon" aria-hidden="true"></span>Escotilhas</h3><div class="hatch-settings-body"><div class="hatch-explanation"><p><b>1. O que fazer agora</b></p><p id="hatch-now" role="status">Consultando…</p><p id="hatch-reason"></p></div><fieldset><legend>2. Registrar a posição real</legend><p id="hatch-position">Posição registrada: consultando…</p><p>Mova as escotilhas na estufa e registre aqui a posição em que ficaram.</p><div class="hatch-buttons"><button type="button" id="hatch-open" aria-pressed="false" disabled>Registrar abertas</button><button type="button" id="hatch-closed" aria-pressed="false" disabled>Registrar fechadas</button></div></fieldset><p id="hatch-note" role="status" hidden></p><details class="hatch-quality-guide"><summary>Avisos neste aparelho</summary><div class="hatch-buttons"><button type="button" id="hatch-push">Ativar avisos</button><button type="button" id="hatch-test">Testar aviso</button><button type="button" id="hatch-install" hidden>Instalar</button></div></details><details class="hatch-quality-guide"><summary>Histórico e critérios da orientação</summary><p id="hatch-last" hidden></p><p id="hatch-benefit"></p><p><b>Abrir:</b> renovar o ar quando o exterior consegue retirar vapor da carga, evitando umidade acumulada que pode favorecer manchas e fungos. Umidade relativa sozinha não basta: o sistema compara a quantidade de água no ar e o equilíbrio com a madeira.</p><p><b>Fechar:</b> evitar chuva, resfriamento noturno, secagem superficial excessiva ou ventilação sem benefício claro. Fechar também retém vapor: calor maior não significa madeira melhor.</p><p><b>Manter:</b> pode indicar posição adequada, benefício insuficiente, espera pelo horário ou falta de dados. Confira sempre o motivo. Os limites são iniciais; não substituem medir a umidade das tábuas e conferir rachaduras, manchas e uniformidade da pilha.</p><p><a href="https://www.pubs.ext.vt.edu/420/420-030/420-030.html" target="_blank" rel="noopener">Referência: operação de estufa solar — Virginia Tech</a></p></details></div>';
+ settings.innerHTML='<h3 id="hatch-settings-title"><span class="hatch-window-icon" aria-hidden="true"></span>Escotilhas</h3><div class="hatch-settings-body"><div class="hatch-explanation"><p><b>Orientação dos avisos automáticos</b></p><p id="hatch-now" role="status">Consultando…</p><p id="hatch-reason"></p></div><fieldset><legend>Registrar a posição real</legend><p id="hatch-position">Posição registrada: consultando…</p><p>Mova as escotilhas na estufa e registre aqui a posição em que ficaram.</p><div class="hatch-buttons"><button type="button" id="hatch-open" aria-pressed="false" disabled>Registrar abertas</button><button type="button" id="hatch-closed" aria-pressed="false" disabled>Registrar fechadas</button></div></fieldset><p id="hatch-note" role="status" hidden></p><details class="hatch-quality-guide"><summary>Avisos neste aparelho</summary><div class="hatch-buttons"><button type="button" id="hatch-push">Ativar avisos</button><button type="button" id="hatch-test">Testar aviso</button><button type="button" id="hatch-install" hidden>Instalar</button></div></details><details class="hatch-quality-guide"><summary>Histórico e critérios da orientação</summary><p id="hatch-last" hidden></p><p id="hatch-benefit"></p><p><b>Abrir:</b> renovar o ar quando o exterior consegue retirar vapor da carga, evitando umidade acumulada que pode favorecer manchas e fungos. Umidade relativa sozinha não basta: o sistema compara a quantidade de água no ar e o equilíbrio com a madeira.</p><p><b>Fechar:</b> evitar chuva, resfriamento noturno, secagem superficial excessiva ou ventilação sem benefício claro. Fechar também retém vapor: calor maior não significa madeira melhor.</p><p><b>Manter:</b> pode indicar posição adequada, benefício insuficiente, espera pelo horário ou falta de dados. Confira sempre o motivo. Os limites são iniciais; não substituem medir a umidade das tábuas e conferir rachaduras, manchas e uniformidade da pilha.</p><p><a href="https://www.pubs.ext.vt.edu/420/420-030/420-030.html" target="_blank" rel="noopener">Referência: operação de estufa solar — Virginia Tech</a></p></details></div>';
  document.querySelector('#settings-content').prepend(settings);
  const $=id=>document.getElementById('hatch-'+id);let state={},token='',installEvent;
  window.addEventListener('fabrica-authorized',e=>{token=e.detail;});
  const endpoint=window.FabricaHatchConfig?.endpoint;
+ $('check').disabled=!endpoint;
  const note=text=>{ $('note').textContent=text; $('note').hidden=!text; };
- async function api(path,data){const r=await fetch(endpoint+path,{cache:'no-store',headers:data?{'Content-Type':'application/json','Authorization':'Bearer '+token}:{},...(data?{method:'POST',body:JSON.stringify(data)}:{})});if(!r.ok){if(r.status===401)token='';throw Error(r.status===401?'Senha incorreta.':'Serviço indisponível ('+r.status+').');}return r.json();}
+ async function api(path,data){const r=await fetch(endpoint+path,{cache:'no-store',headers:data?{'Content-Type':'application/json','Authorization':'Bearer '+token}:{},...(data?{method:'POST',body:JSON.stringify(data)}:{})});if(!r.ok){if(r.status===409)throw Error('A orientação mudou. Confira a posição e tente registrar novamente.');if(r.status===401)token='';throw Error(r.status===401?'Senha incorreta.':'Serviço indisponível ('+r.status+').');}return r.json();}
  function key(){if(!token)token=prompt('Senha de Configurações:')||'';return !!token;}
  let saving=false, available=false;
  function updateButtons(){
@@ -62,9 +83,8 @@
    const title=matches?'Posição já registrada conforme a orientação':action==='ABRIR'?'Abra as escotilhas':action==='FECHAR'?'Feche as escotilhas':action==='MANTER'?'Nenhum ajuste indicado agora':'Orientação indisponível';
    const reason=state.reason?.startsWith('Entre horários de intervenção')?'O painel está entre os horários programados de orientação.':state.reason||'Aguardando a próxima análise.';
    $('now').textContent=title;
-   $('action').textContent=matches?'ESCOTILHAS: POSIÇÃO CONFERIDA':'ESCOTILHAS: '+title;
-   $('reason').textContent=$('panel-reason').textContent=reason;
-   $('position').textContent='Última posição registrada: '+position+'.';
+   $('reason').textContent=reason;
+   $('position').textContent=$('panel-position').textContent='Última posição registrada: '+position+'.';
    $('benefit').textContent=state.qualityBenefit||'';
    const last=state.lastRecommendation;
    $('last').hidden=!last;
@@ -73,26 +93,58 @@
    window.dispatchEvent(new CustomEvent('hatch-state',{detail:state}));
   }catch(e){
    available=false;
-   $('action').textContent='ESCOTILHAS: ORIENTAÇÃO INDISPONÍVEL';
    $('now').textContent='Orientação indisponível';
-   $('reason').textContent=$('panel-reason').textContent=e.message;
-   if(!state.position)$('position').textContent='Última posição registrada: indisponível.';
+   $('reason').textContent=e.message;
+   if(!state.position)$('panel-position').textContent=$('position').textContent='Última posição registrada: indisponível.';
   }finally{updateButtons();}
  }
  async function confirm(position){
-  if(!available||saving||!key())return;
+  if(!available||saving)return;
   saving=true;
   updateButtons();
   note('Registrando posição…');
   try{
    await api('/confirm',{position,revision:state.revision});
    await refresh();
+   clearTimeout(checkExpiry);
+   $('result').textContent='Posição atualizada. Verifique novamente quando precisar.';
+   $('calculation').textContent='';
    note(position==='ABRIR'?'Posição registrada como abertas.':'Posição registrada como fechadas.');
   }catch(e){
    await refresh();
    note(e.message);
   }finally{saving=false;updateButtons();}
  }
+ let checkExpiry;
+ const number=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1});
+ const time=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'});
+ $('check').onclick=async()=>{
+  clearTimeout(checkExpiry);
+  $('check').disabled=true;
+  $('result').textContent='Calculando…';
+  $('calculation').textContent='';
+  try{
+   const result=await api('/avaliar');
+   const m=result.metrics;
+   if(!m||![m.insideAH,m.outsideAH,m.incomingEMC].every(Number.isFinite)){
+    $('result').textContent='Sem indicação segura para mudar a posição.';
+    $('calculation').textContent=result.reason||'Aguardando leituras válidas.';
+    return;
+   }
+   const position=result.position;
+   const title=result.action==='ABRIR'?'Abra as escotilhas':result.action==='FECHAR'?'Feche as escotilhas':position==='ABRIR'?'Mantenha abertas':position==='FECHAR'?'Mantenha fechadas':'Nenhuma mudança indicada. Confira a posição na estufa.';
+   $('result').textContent=title+'. '+result.reason;
+   const delta=m.insideAH-m.outsideAH;
+   $('calculation').textContent='Última hora: '+number.format(m.insideAH)+' g/m³ dentro − '+number.format(m.outsideAH)+' g/m³ fora = '+number.format(delta)+' g/m³. Equilíbrio estimado com o ar externo aquecido: '+number.format(m.incomingEMC)+'%. Amostra '+time.format(result.sampleAt)+' · cálculo '+time.format(result.at)+'.';
+   checkExpiry=setTimeout(()=>{
+    $('result').textContent='A orientação anterior expirou. Verifique de novo.';
+    $('calculation').textContent='';
+   },300000);
+  }catch{
+   $('result').textContent='Não foi possível calcular agora.';
+   $('calculation').textContent='Tente novamente em alguns minutos.';
+  }finally{$('check').disabled=false;}
+ };
  $('manage').onclick=()=>document.getElementById('tab-configuracoes').click();
  $('open').onclick=()=>confirm('ABRIR');
  $('closed').onclick=()=>confirm('FECHAR');

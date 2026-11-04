@@ -9,12 +9,22 @@
  devil.innerHTML='<path d="M-9-13v-9l6 6h6l6-6v9l3 4v14H-12V-9z" fill="#b95765"/><path d="M-8-11H8V2H-8z" fill="#f2a087"/><path d="M-7-10h5v5h-5zm9 0h5v5H2z" fill="#fff4d8"/><path d="M-5-9h2v3h-2zm8 0h2v3H3zM-5-2h2v2h6v-2h2v4H-5z" fill="#344057"/><path d="M-6 5h4v3h-4zm8 0h4v3H2z" fill="#8c5068"/><path d="M11 2h8v-9h-3l5-6 5 6h-3V6H11z" fill="#b95765"/>';
  side.append(devil);
  const arrows=side.querySelector('path[d^="M91 108"]');arrows?.classList.add('hatch-air-arrow');
- const style=document.createElement('style');style.textContent=`#kiln-heat,#kiln-devil{transition:opacity 1.5s ease-in-out}.mission-art svg:not([data-hatches="ABRIR"]) .hatch-air-arrow,.mission-art svg:not([data-hatches="ABRIR"]) #kiln-wind{display:none!important}.mission-art svg[data-hatches="ABRIR"] #kiln-wind{display:inline!important;opacity:1!important}.mission-art svg[data-hatches="ABRIR"] .wind-line{opacity:1!important}@media(prefers-reduced-motion:reduce){#kiln-heat,#kiln-devil{transition:none}}`;
+ const style=document.createElement('style');style.textContent=`#kiln-heat,#kiln-devil{transition:opacity 1.5s ease-in-out}.mission-art svg:not([data-hatches="ABRIR"]) .hatch-air-arrow{display:none!important}@media(prefers-reduced-motion:reduce){#kiln-heat,#kiln-devil{transition:none}}`;
  document.head.append(style);
  function hatches(e){svg.dataset.hatches=['ABRIR','FECHAR'].includes(e.detail?.position)?e.detail.position:'unknown';}
  window.addEventListener('hatch-state',hatches);if(window.FabricaHatchState)hatches({detail:window.FabricaHatchState});
- const fanStyle=document.createElement('style');fanStyle.textContent=`html[data-scene-coolers="on"] .fan>path{animation:scene-fan-spin 1.2s linear infinite;transform-origin:32px 32px}@keyframes scene-fan-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.fan>path{animation:none!important}}`;document.head.append(fanStyle);
- const telemetry=t=>{const level=heat(t?.airT,t?.airValid===true);tint.setAttribute('opacity',level);devil.setAttribute('opacity',level>0?'1':'0');document.documentElement.dataset.sceneCoolers=t?.status==='online'&&t.coolers===true?'on':'off';};
+ const rotor=document.querySelector('.cooler-rotor');
+ const motion=matchMedia('(prefers-reduced-motion: reduce)');
+ let spinning=false;
+ const spin=()=>{
+  if(!rotor)return;
+  rotor.querySelector('animateTransform')?.remove();
+  if(!spinning||motion.matches)return;
+  rotor.append(make('animateTransform',{attributeName:'transform',type:'rotate',from:'0 32 32',to:'360 32 32',dur:'1.2s',repeatCount:'indefinite'}));
+  rotor.lastElementChild.beginElement();
+ };
+ motion.addEventListener?.('change',spin);
+ const telemetry=t=>{const level=heat(t?.airT,t?.airValid===true);tint.setAttribute('opacity',level);devil.setAttribute('opacity',level>0?'1':'0');const on=t?.status==='online'&&t.coolers===true;if(on!==spinning){spinning=on;spin();}};
  window.addEventListener('scene-telemetry',e=>telemetry(e.detail));telemetry(window.FabricaSceneTelemetry);
  }
  return {heat,flight,mount};
