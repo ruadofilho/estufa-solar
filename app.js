@@ -342,16 +342,17 @@ refreshCloud();
 
 
 function atualizarConfirmacaoCooler(t){
- const manual=pedidoCooler&&t?.coolerCommandId!==pedidoCooler.id?pedidoCooler.mode:t?.coolerMode;
- const auto=document.getElementById('cooler-auto'),button=document.getElementById('cooler-manual');
- if(!auto||!button)return;
- auto.setAttribute('aria-pressed',String(manual==='auto'));
- button.setAttribute('aria-pressed',String(manual==='on'||manual==='off'));
- button.textContent=manual==='on'?'Manual · Ligado':manual==='off'?'Manual · Desligado':'Manual';
+ const online=t?.status==='online';
+ for(const [id,mode] of [['cooler-auto','auto'],['cooler-on','on'],['cooler-off','off']]){
+  document.getElementById(id).setAttribute('aria-pressed',String(online&&t.coolerMode===mode));
+ }
  const status=document.getElementById('cooler-command-status');
  if(!pedidoCooler){status.textContent='';return;}
- const confirmed=t?.status==='online'&&t.coolerCommandId===pedidoCooler.id&&t.coolerMode===pedidoCooler.mode;
- status.textContent=confirmed?'Confirmado pela ESP32.':'Aguardando confirmação…';
+ const {id,mode}=pedidoCooler;
+ const label=mode==='on'?'Ligar':mode==='off'?'Desligar':'Programação automática';
+ const acknowledged=online&&t.coolerCommandId===id&&t.coolerMode===mode;
+ const matchesOutput=mode==='auto'||t?.coolers===(mode==='on');
+ status.textContent=acknowledged?(matchesOutput?label+' · confirmado pela ESP32.':label+' · recebido, mas o estado reportado diverge.'):label+' · aguardando confirmação da ESP32…';
 }
 function solicitarAcessoAba(){
  if(!window.abaProtegidaPendente)return;
@@ -367,7 +368,7 @@ function minutoCooler(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s))return NaN;cons
 async function enviarCoolerSimples(payload){
  if(envioCooler)return false;
  envioCooler=true;
- const ids=['cooler-auto','cooler-manual','cooler-dialog-confirm'];ids.forEach(id=>document.getElementById(id).disabled=true);
+ const ids=['cooler-auto','cooler-on','cooler-off','cooler-dialog-confirm'];ids.forEach(id=>document.getElementById(id).disabled=true);
  const status=document.getElementById('cooler-command-status'),error=document.getElementById('cooler-dialog-error');error.textContent='';status.textContent='Enviando…';
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
  try{
@@ -391,10 +392,8 @@ async function abrirProgramacaoSimples(){
  }catch(e){error.textContent=e.message;}finally{clearTimeout(timer);}
 }
 document.getElementById('cooler-auto').onclick=()=>autorizarAcaoCooler(abrirProgramacaoSimples);
-document.getElementById('cooler-manual').onclick=()=>autorizarAcaoCooler(()=>{
- const mode=pedidoCooler?.mode??state.telemetry?.coolerMode;
- return enviarCoolerSimples({mode:mode==='on'?'off':'on'});
-});
+document.getElementById('cooler-on').onclick=()=>autorizarAcaoCooler(()=>enviarCoolerSimples({mode:'on'}));
+document.getElementById('cooler-off').onclick=()=>autorizarAcaoCooler(()=>enviarCoolerSimples({mode:'off'}));
 document.getElementById('cooler-dialog-cancel').onclick=()=>document.getElementById('cooler-dialog').close();
 document.getElementById('cooler-dialog-confirm').onclick=async()=>{
  const start=minutoCooler(document.getElementById('cooler-start').value),end=minutoCooler(document.getElementById('cooler-end').value);
