@@ -99,7 +99,30 @@ function drawTimer(b,r){
  else {main.textContent=r.status==='history'?'Histórico incompleto':r.status==='stale'?'Sem atualização':r.status==='conditions'?'Rever condições':'Em atualização';sub.textContent=r.message||'Aguardando dados para calcular.';}
 
 }
+function renderKilnLoad(){
+ const batch=canonical?.batches.find(b=>b.id===canonical.selected);
+ const quantity=Number(batch?.quantity);
+ const count=batch&&batch.status!=='closed'&&Number.isInteger(quantity)&&quantity>0?quantity:0;
+ const wood=$$('kiln-wood');
+ const key=canonical?String(count):'pending';
+ if(wood.dataset.load===key)return;
+ wood.dataset.load=key;
+ const visible=Math.min(count,24);
+ const rows=Math.ceil(visible/2);
+ const step=Math.min(10,36/Math.max(1,rows-1));
+ const height=Math.min(6,step*0.65);
+ const boards=[];
+ for(let i=0;i<visible;i++){
+  const x=i%2===0?117:153;
+  const y=(190-height-Math.floor(i/2)*step).toFixed(2);
+  boards.push('<rect x="'+x+'" y="'+y+'" width="29" height="'+height.toFixed(2)+'"/>');
+ }
+ wood.innerHTML=visible?'<path d="M119 190v8m24-8v8'+(visible>1?'m12-8v8m24-8v8':'')+'" stroke="#596d6d" stroke-width="4"/><g fill="#dfa96d" stroke="#87543b" stroke-width="'+Math.min(2,step*0.25)+'">'+boards.join('')+'</g>':'';
+ $$('kiln-load').textContent=!canonical?'Aguardando lote sincronizado…':count===0?'Estufa vazia':count===1?'1 tábua no lote':count.toLocaleString('pt-BR')+' tábuas no lote'+(count>visible?' · desenho ilustrativo':'');
+}
+
 function render(){
+ renderKilnLoad();
  const b=active(),t=state.telemetry;
  window.FabricaSceneTelemetry=t;window.dispatchEvent(new CustomEvent("scene-telemetry",{detail:t}));
  document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online'&&t.airValid===true);
