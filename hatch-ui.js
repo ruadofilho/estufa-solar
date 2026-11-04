@@ -3,48 +3,44 @@
  style.textContent=`
  .hatch-status-stack{display:flex;flex-direction:column;align-items:flex-end;gap:9px;flex-shrink:0}
  .hatch-indicator{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
- #hatch-action{font:700 11px 'Courier New',monospace;letter-spacing:.15px;color:#433a89;background:#eeecfa;border:2px solid;border-color:#85809e #fff #fff #85809e;padding:6px 9px;white-space:nowrap}
+ #hatch-action{font:700 11px 'Courier New',monospace;letter-spacing:.15px;color:#285541;background:#eef4e8;border:2px solid;border-color:#819684 #fff #fff #819684;padding:6px 9px;white-space:nowrap}
  #hatch-confirm{min-height:28px;padding:4px 8px;font-size:11px}
- .hatch-settings{padding:3px!important;background:#d9d6ee!important;border:3px solid!important;border-color:#fff #73708d #73708d #fff!important;box-shadow:3px 3px 0 #d5ccb6;margin:0 0 22px;min-width:0}
- .hatch-settings h3{margin:0;padding:9px 11px;color:#fff;background:#433a89;font:700 13px 'Courier New',monospace;display:flex;align-items:center;gap:9px}
- .hatch-window-icon{width:14px;height:12px;border:1px solid #fff;box-shadow:inset 0 3px #b8b5e5;display:inline-block;flex-shrink:0}
+ .hatch-settings{padding:3px!important;background:#dae7d6!important;border:3px solid!important;border-color:#fff #718573 #718573 #fff!important;box-shadow:3px 3px 0 #d5ccb6;margin:0 0 22px;min-width:0}
+ .hatch-settings h3{margin:0;padding:9px 11px;color:#fff;background:#285541;font:700 13px 'Courier New',monospace;display:flex;align-items:center;gap:9px}
+ .hatch-window-icon{width:14px;height:12px;border:1px solid #fff;box-shadow:inset 0 3px #b1c9ab;display:inline-block;flex-shrink:0}
  .hatch-settings-body{padding:16px;display:grid;grid-template-columns:1fr;gap:12px}
- .hatch-settings #hatch-now{font-size:17px;color:#29205f;margin-bottom:4px}
- .hatch-settings #hatch-position{font-weight:bold;color:#29205f;margin-bottom:4px}
+ .hatch-settings #hatch-now{font-size:17px;color:#214330;margin-bottom:4px}
+ .hatch-settings #hatch-position{font-weight:bold;color:#214330;margin-bottom:4px}
  .hatch-settings details>div{margin-top:10px}
  .hatch-settings .hatch-buttons button{min-height:40px}
- .hatch-settings fieldset{margin:0;padding:13px;border:2px groove #faf9ff;min-width:0}
- .hatch-settings legend{padding:0 6px;font:700 12px 'Courier New',monospace;color:#433a89}
- .hatch-settings p{font-size:12px;line-height:1.6;margin:0 0 12px;color:#42445c}
+ .hatch-settings fieldset{margin:0;padding:13px;border:2px groove #f8fbf4;min-width:0}
+ .hatch-settings legend{padding:0 6px;font:700 12px 'Courier New',monospace;color:#285541}
+ .hatch-settings p{font-size:12px;line-height:1.6;margin:0 0 12px;color:#3e5547}
  .hatch-settings .hatch-buttons{display:flex;gap:8px;flex-wrap:wrap}
- .hatch-settings button{font-size:12px;min-height:34px;padding:7px 11px;color:#302858;background:#eeedf3;border:2px solid;border-color:#fff #77738c #77738c #fff}
- .hatch-settings button:active{border-color:#77738c #fff #fff #77738c}
- .hatch-settings button[aria-pressed=true]{background:#c8d8ca;border-color:#77738c #fff #fff #77738c}
+ .hatch-settings button{font-size:12px;min-height:34px;padding:7px 11px;color:#254232;background:#edf3e9;border:2px solid;border-color:#fff #728877 #728877 #fff}
+ .hatch-settings button:active{border-color:#728877 #fff #fff #728877}
+ .hatch-settings button[aria-pressed=true]{background:#c8d8ca;border-color:#728877 #fff #fff #728877}
  #hatch-note{grid-column:1/-1;margin:0}
- dialog.hatch-settings{margin:auto!important;width:min(640px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;color:#26304c}
- .hatch-settings::backdrop{background:#26304c66}
+ dialog.hatch-settings{margin:auto!important;width:min(640px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;color:#233c30}
+ .hatch-settings::backdrop{background:#233c3066}
  .hatch-settings h3 #hatch-close{margin-left:auto;min-height:22px;padding:0 6px}
  #hatch-manage{font-size:11px;padding:4px 8px;min-height:28px}
- #hatch-panel-reason{max-width:340px;font-size:12px;line-height:1.5;color:#4f5868;margin:0;text-align:right}.hatch-quality-guide{grid-column:1/-1;padding:10px;background:#fffbed}.hatch-quality-guide summary{font:700 12px Courier New,monospace}.hatch-quality-guide p{margin:10px 0}.hatch-explanation{grid-column:1/-1;padding:10px;background:#fffbed;border:2px groove #faf9ff}.hatch-explanation p:last-child{margin-bottom:0}
+ #hatch-panel-reason{max-width:340px;font-size:12px;line-height:1.5;color:#4f5868;margin:0;text-align:right}.hatch-quality-guide{grid-column:1/-1;padding:10px;background:#fffbed}.hatch-quality-guide summary{font:700 12px Courier New,monospace}.hatch-quality-guide p{margin:10px 0}.hatch-explanation{grid-column:1/-1;padding:10px;background:#fffbed;border:2px groove #f8fbf4}.hatch-explanation p:last-child{margin-bottom:0}
  .hatch-check{margin-top:16px}
  .hatch-check #hatch-result{font-size:18px;font-weight:bold;margin-bottom:5px}
- .hatch-check #hatch-check{background:#433a89;color:white;font-weight:bold}
- .hatch-check #hatch-panel-position{font-weight:bold;margin:0}
+ .hatch-check #hatch-check{background:#285541;color:white;font-weight:bold}
  .hatch-check p:last-child{margin-bottom:0}
  @media(max-width:720px){.hatch-status-stack{align-items:flex-start}#hatch-panel-reason{text-align:left}.hatch-indicator{justify-content:flex-start}.hatch-settings-body{grid-template-columns:1fr;padding:12px;gap:12px}.hatch-settings .hatch-buttons button{flex:1}}
  `;
  document.head.append(style);
- const intro=document.querySelector('#painel .intro');
  const check=document.createElement('section');
  check.className='hatch-settings hatch-check';
  check.setAttribute('aria-labelledby','hatch-check-title');
  check.innerHTML=`
   <h3 id="hatch-check-title">Escotilhas · decisão de agora</h3>
   <div class="hatch-settings-body">
-   <p id="hatch-panel-position">Posição registrada: consultando…</p>
    <div class="hatch-buttons">
     <button type="button" id="hatch-check" disabled>Verificar agora</button>
-    <button type="button" id="hatch-manage">Registrar posição</button>
    </div>
    <div class="hatch-explanation" aria-live="polite" aria-atomic="true">
     <p id="hatch-result"><b>Consulte antes de abrir ou fechar.</b></p>
@@ -52,11 +48,10 @@
    </div>
    <p>Consulte quando o tempo mudar ou antes de mexer nas escotilhas. Os avisos automáticos têm horários próprios. O ajuste é manual.</p>
   </div>`;
- if(intro)intro.after(check);
- else document.body.prepend(check);
+
  const settings=document.createElement('article');settings.className='hatch-settings';settings.setAttribute('aria-labelledby','hatch-settings-title');
  settings.innerHTML='<h3 id="hatch-settings-title"><span class="hatch-window-icon" aria-hidden="true"></span>Escotilhas</h3><div class="hatch-settings-body"><div class="hatch-explanation"><p><b>Orientação dos avisos automáticos</b></p><p id="hatch-now" role="status">Consultando…</p><p id="hatch-reason"></p></div><fieldset><legend>Registrar a posição real</legend><p id="hatch-position">Posição registrada: consultando…</p><p>Mova as escotilhas na estufa e registre aqui a posição em que ficaram.</p><div class="hatch-buttons"><button type="button" id="hatch-open" aria-pressed="false" disabled>Registrar abertas</button><button type="button" id="hatch-closed" aria-pressed="false" disabled>Registrar fechadas</button></div></fieldset><p id="hatch-note" role="status" hidden></p><details class="hatch-quality-guide"><summary>Avisos neste aparelho</summary><div class="hatch-buttons"><button type="button" id="hatch-push">Ativar avisos</button><button type="button" id="hatch-test">Testar aviso</button><button type="button" id="hatch-install" hidden>Instalar</button></div></details><details class="hatch-quality-guide"><summary>Histórico e critérios da orientação</summary><p id="hatch-last" hidden></p><p id="hatch-benefit"></p><p><b>Abrir:</b> renovar o ar quando o exterior consegue retirar vapor da carga, evitando umidade acumulada que pode favorecer manchas e fungos. Umidade relativa sozinha não basta: o sistema compara a quantidade de água no ar e o equilíbrio com a madeira.</p><p><b>Fechar:</b> evitar chuva, resfriamento noturno, secagem superficial excessiva ou ventilação sem benefício claro. Fechar também retém vapor: calor maior não significa madeira melhor.</p><p><b>Manter:</b> pode indicar posição adequada, benefício insuficiente, espera pelo horário ou falta de dados. Confira sempre o motivo. Os limites são iniciais; não substituem medir a umidade das tábuas e conferir rachaduras, manchas e uniformidade da pilha.</p><p><a href="https://www.pubs.ext.vt.edu/420/420-030/420-030.html" target="_blank" rel="noopener">Referência: operação de estufa solar — Virginia Tech</a></p></details></div>';
- document.querySelector('#settings-content').prepend(settings);
+ document.querySelector('#settings-content').prepend(check,settings);
  const $=id=>document.getElementById('hatch-'+id);let state={},token='',installEvent;
  window.addEventListener('fabrica-authorized',e=>{token=e.detail;});
  const endpoint=window.FabricaHatchConfig?.endpoint;
@@ -84,7 +79,7 @@
    const reason=state.reason?.startsWith('Entre horários de intervenção')?'O painel está entre os horários programados de orientação.':state.reason||'Aguardando a próxima análise.';
    $('now').textContent=title;
    $('reason').textContent=reason;
-   $('position').textContent=$('panel-position').textContent='Última posição registrada: '+position+'.';
+   $('position').textContent='Última posição registrada: '+position+'.';
    $('benefit').textContent=state.qualityBenefit||'';
    const last=state.lastRecommendation;
    $('last').hidden=!last;
@@ -95,7 +90,7 @@
    available=false;
    $('now').textContent='Orientação indisponível';
    $('reason').textContent=e.message;
-   if(!state.position)$('panel-position').textContent=$('position').textContent='Última posição registrada: indisponível.';
+   if(!state.position)$('position').textContent='Última posição registrada: indisponível.';
   }finally{updateButtons();}
  }
  async function confirm(position){
@@ -145,7 +140,6 @@
    $('calculation').textContent='Tente novamente em alguns minutos.';
   }finally{$('check').disabled=false;}
  };
- $('manage').onclick=()=>document.getElementById('tab-configuracoes').click();
  $('open').onclick=()=>confirm('ABRIR');
  $('closed').onclick=()=>confirm('FECHAR');
  let registration;
