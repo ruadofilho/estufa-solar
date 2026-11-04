@@ -78,7 +78,7 @@ details{border:1px solid #a4b3a4;padding:15px;background:#fffef6;margin:20px 0}s
 <path class="sand" d="M38 43H42V49H38ZM38 53H42V59H38Z" fill="#b39340"/>
 <path d="M10 2H70V8H10ZM10 92H70V98H10Z" fill="#eedb9f"/>
 </svg>
-<div class="clock-copy"><div class="label">TEMPO ATÉ A META DE UMIDADE</div><div id="time-main" aria-live="polite">--</div><p id="time-caption">Cadastre a madeira para começar.</p></div>
+<div class="clock-copy"><div class="label">DATA OTIMISTA</div><div id="time-main" aria-live="polite">--</div><p id="time-caption">Cadastre a madeira para começar.</p></div>
 </div>
 <div class="clock-bottom"><div class="clock-track" aria-hidden="true"><div id="time-meter-fill"></div></div><div id="time-meta">Pinus elliottii · sua próxima carga</div><div class="clock-actions"><small>Estimativa pelo ar medido; confirme a meta na madeira.</small><button id="timer-edit" type="button">Meu lote →</button></div></div>
 </article><div class="summary-strip" id="load-summary"></div><p class="muted" id="climate-note"></p>
@@ -91,8 +91,6 @@ details{border:1px solid #a4b3a4;padding:15px;background:#fffef6;margin:20px 0}s
 
 <article class="box process-values" style="margin:16px 0"><h3>Secagem estimada</h3>
 <div class="form-grid"><div><div class="label">UMIDADE ESTIMADA DA MADEIRA</div><strong id="estimated-mc">--</strong></div><div><div class="label">EQUILÍBRIO NO ÚLTIMO INTERVALO</div><strong id="equilibrium-mc">--</strong></div><div><div class="label">ÁGUA LÍQUIDA RETIRADA HOJE</div><strong id="daily-water">--</strong></div><div><div class="label">ÁGUA LÍQUIDA RETIRADA NOS REGISTROS</div><strong id="estimated-water">--</strong></div></div>
-<button id="process-refresh" type="button">Atualizar dados da secagem</button>
-<details><summary>Água estimada por dia nos últimos 30 dias registrados</summary><div class="table-wrap"><table><thead><tr><th>Data</th><th>Horas cobertas</th><th>Saída kg</th><th>Reabsorção kg</th><th>Saldo kg</th></tr></thead><tbody id="daily-process"></tbody></table></div></details>
 </article>
 <div class="connection">&gt; MADEIRA: cadastre sua carga na aba Lote.<br>&gt; ACOMPANHAMENTO: o tempo até a meta aparece acima.</div></section>
 
@@ -118,7 +116,6 @@ details{border:1px solid #a4b3a4;padding:15px;background:#fffef6;margin:20px 0}s
 </form>
 <div id="batch-message" class="muted" role="status"></div>
 <div class="controls"><button id="close-batch" type="button" disabled>Encerrar lote selecionado</button></div>
-<details><summary>Guardar meus cadastros</summary><div class="controls"><button id="export-simple" type="button">Salvar uma cópia</button><label class="button" for="import-simple">Abrir uma cópia</label><input id="import-simple" type="file" accept=".json,application/json"></div><p id="backup-status" class="muted"></p></details>
 
 
 <span id="source-note" hidden></span>
@@ -152,8 +149,6 @@ details{border:1px solid #a4b3a4;padding:15px;background:#fffef6;margin:20px 0}s
 </form>
 <div class="table-wrap"><table><caption>Medições do lote selecionado</caption><thead><tr><th scope="col">Data e hora em Brasília</th><th scope="col">Umidade medida</th><th scope="col">Medidor e grupo</th></tr></thead><tbody id="wood-readings"></tbody></table></div>
 </article>
-<details id="physical-parameters"><summary>Dados da estufa e ajuste do modelo</summary><p>Geometria e perdas vêm do memorial. Os valores abaixo são cenários iniciais ajustáveis, ainda não medições da montagem. Circulação pelos canais e renovação externa são grandezas diferentes.</p><div class="form-grid">
-<div class="field"><label for="physical-density">Densidade básica (kg/m³)</label><input id="physical-density" data-physical="density" type="number" min="250" max="900" step="1"></div><div class="field"><label for="physical-diffusivity">Difusividade de referência a 25 °C (m²/s)</label><input id="physical-diffusivity" data-physical="diffusivity" type="number" min="0.000000000001" max="0.00000001" step="any"></div><div class="field"><label for="physical-activation">Energia de ativação (J/mol)</label><input id="physical-activation" data-physical="activation" type="number" min="0" max="80000" step="100"></div><div class="field"><label for="physical-solarFactor">Fator solar da cobertura (g)</label><input id="physical-solarFactor" data-physical="solarFactor" type="number" min="0.1" max="0.95" step=".01"></div><div class="field"><label for="physical-ua">Perdas da envoltória UA (W/K)</label><input id="physical-ua" data-physical="ua" type="number" min="1" max="30" step=".01"></div><div class="field"><label for="physical-circulation">Circulação pelos canais com coolers ligados (m³/h)</label><input id="physical-circulation" data-physical="circulation" type="number" min="0" max="1000" step="1"></div><div class="field"><label for="physical-exchangeFan">Renovação externa forçada adicional (m³/h)</label><input id="physical-exchangeFan" data-physical="exchangeFan" type="number" min="0" max="100" step="1"></div><div class="field"><label for="physical-freeArea">Fração livre das escotilhas (0 a 1)</label><input id="physical-freeArea" data-physical="freeArea" type="number" min="0" max="1" step=".01"></div></div><button id="save-physical" type="button">Salvar parâmetros deste lote</button><div class="controls"><button id="fit-model" type="button">Ajustar cinética pelas medições</button></div><p id="calibration-message" class="muted" role="status"></p></details><details><summary>Dados do cálculo</summary><p id="process-status" class="muted">Cadastre um lote para integrar as condições medidas.</p><p id="process-coverage" class="muted"></p><p id="process-limit" class="muted"></p><p id="process-source" class="muted" role="status"></p></details>
 
 </details>
 </section>
@@ -161,7 +156,7 @@ details{border:1px solid #a4b3a4;padding:15px;background:#fffef6;margin:20px 0}s
 <div class="fornada-log" role="region" aria-label="Histórico de lotes" tabindex="0">
 <table class="fornada-history-table"><thead><tr><th>Início</th><th>Lote</th><th>Local</th><th>Tábuas / volume</th><th>Meta</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="fornada-history-body"></tbody></table></div>
 <div class="history-feedback" role="status"><span id="history-message"></span><button id="undo-delete" type="button" hidden>Desfazer exclusão</button></div>
-<hr class="history-divider"><h3>LEITURAS DOS SENSORES</h3><h2>A secagem, hora a hora</h2><div class="import-row"><button id="usar-esp" type="button">Atualizar histórico</button><a class="button" id="baixar-csv" hidden>Baixar CSV do dia</a></div><div class="import-row"><label class="button" for="arquivo">Abrir CSV da estufa</label><input id="arquivo" type="file" accept=".csv,text/csv"><label for="dia">Dia:</label><select id="dia" disabled><option>Sem registros</option></select></div><div id="mensagem-csv" class="notice" role="status">Abra esta aba para consultar as leituras guardadas na estufa.</div><div class="charts"><article class="chart"><h3>TEMPERATURA / °C</h3><div id="grafico-t" class="empty">SEM REGISTROS DE TEMPERATURA</div><div class="legend">Média por hora. Barras: mínima e máxima entre amostras.</div></article><article class="chart"><h3>UMIDADE DO AR / %</h3><div id="grafico-u" class="empty">SEM REGISTROS DE UMIDADE</div><div class="legend">Lacunas indicam horas sem registros.</div></article></div><div class="section-title"><h3>REGISTROS POR HORA</h3><span class="muted">Mínima / média / máxima entre amostras</span></div><div class="table-wrap"><table><thead><tr><th>Hora</th><th>Amostras</th><th>Temperatura °C</th><th>Umidade %</th></tr></thead><tbody id="tabela"><tr><td colspan="4">Aguardando leituras do histórico ou um arquivo CSV.</td></tr></tbody></table></div></section>
+<hr class="history-divider"><h3>LEITURAS DOS SENSORES</h3><h2>A secagem, hora a hora</h2><div class="import-row"><label for="dia">Dia:</label><select id="dia" disabled><option>Sem registros</option></select></div><div id="mensagem-csv" class="notice" role="status">Abra esta aba para consultar as leituras guardadas na estufa.</div><div class="charts"><article class="chart"><h3>TEMPERATURA / °C</h3><div id="grafico-t" class="empty">SEM REGISTROS DE TEMPERATURA</div><div class="legend">Média por hora. Barras: mínima e máxima entre amostras.</div></article><article class="chart"><h3>UMIDADE DO AR / %</h3><div id="grafico-u" class="empty">SEM REGISTROS DE UMIDADE</div><div class="legend">Lacunas indicam horas sem registros.</div></article></div><div class="section-title"><h3>REGISTROS POR HORA</h3><span class="muted">Mínima / média / máxima entre amostras</span></div><div class="table-wrap"><table><thead><tr><th>Hora</th><th>Amostras</th><th>Temperatura °C</th><th>Umidade %</th></tr></thead><tbody id="tabela"><tr><td colspan="4">Aguardando leituras do histórico da estufa.</td></tr></tbody></table></div></section>
 
 <section id="configuracoes" role="tabpanel" aria-labelledby="tab-configuracoes" hidden><h2>Configurações</h2><div id="settings-locked" class="settings-lock">Entre com sua senha para acessar os ajustes.</div><div id="settings-content" class="settings-body" hidden><article class="box"><h3>Conexão e diagnóstico</h3><div class="readout"><span>Controle atual</span><strong id="modo">Aguardando ESP32</strong></div><div class="readout"><span>Horário da última amostra</span><strong id="hora-dispositivo">Aguardando ESP32</strong></div><div class="readout"><span>Último envio recebido</span><strong id="ultima">Nenhum</strong></div><div class="readout"><span>Relógio de Brasília</span><strong id="relogio">--:--</strong></div></article><article class="box"><h3>Estufa e instalação</h3><div class="field"><label for="b-separator">Altura dos separadores (mm)</label><input form="batch-form" id="b-separator" type="number" min="5" max="100" step=".1" value="15" required><small>Altura do espaço entre uma camada e outra.</small></div><h3 style="margin-top:26px">ONDE ESTÁ A ESTUFA</h3>
 <div class="place-row"><div class="field city-field"><label for="city-query">Cidade no Brasil</label><input form="batch-form" id="city-query" value="Sorocaba" minlength="3" autocomplete="off"></div><button id="find-city" type="button">Buscar cidade</button></div>
@@ -198,6 +193,7 @@ function abrir(nome){
   $(id).hidden=!ativo;
  });
  if(memorial)$('calculo').open=true;
+ if(nome==='historico')window.dispatchEvent(new Event('history-open'));
  return true;
 }
 
@@ -211,8 +207,6 @@ relogio();setInterval(relogio,1000);
 
 let registros=[],fonte='csv',geracao=0,estadoOcupado=false,diasOcupado=false,historicoOcupado=false,ultimoRecebimento=0;
 
-function parseCSV(text){const linhas=text.replace(/^\uFEFF/,'').trim().split(/\r?\n/);const cab=linhas.shift().split(',').map(v=>v.trim());const exigidos=['data_hora_Brasilia','epoch','temperatura_C','umidade_relativa_pct'];if(!exigidos.every(n=>cab.includes(n)))throw Error('Formato não reconhecido. Use o CSV exportado pelo programa EstufaAHT20Historico.');const pos=Object.fromEntries(cab.map((v,i)=>[v,i]));const vistos=new Set();const dados=[];for(const linha of linhas){const col=linha.split(',');const data=col[pos.data_hora_Brasilia]?.trim();const t=Number(col[pos.temperatura_C]),u=Number(col[pos.umidade_relativa_pct]),epoch=Number(col[pos.epoch]);if(!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test(data)||!col[pos.temperatura_C]?.trim()||!col[pos.umidade_relativa_pct]?.trim()||!Number.isFinite(t)||!Number.isFinite(u)||t< -40||t>85||u<0||u>100||!Number.isFinite(epoch)||epoch<=0||vistos.has(epoch))continue;const h=Number(data.slice(11,13)),m=Number(data.slice(14,16));if(h>23||m>59)continue;const esperado=new Date(epoch*1000-10800000).toISOString().slice(0,19);if(esperado!==data.replace(' ','T'))continue;vistos.add(epoch);dados.push({dia:data.slice(0,10),hora:h,t,u,epoch});}if(!dados.length)throw Error('O arquivo não contém amostras válidas.');return dados.sort((a,b)=>a.epoch-b.epoch);}
-
 function agrupar(dados){return Array.from({length:24},(_,h)=>{const l=dados.filter(r=>r.hora===h);if(!l.length)return null;const res=k=>{const vs=l.map(r=>r[k]);return {min:Math.min(...vs),max:Math.max(...vs),media:vs.reduce((a,b)=>a+b,0)/vs.length};};return {hora:h,n:l.length,t:res('t'),u:res('u')};});}
 
 const fmt=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
@@ -222,8 +216,6 @@ function desenhar(id,horas,chave){const box=$(id),validos=horas.filter(Boolean);
 
 
 function renderizar(horas){desenhar('grafico-t',horas,'t');desenhar('grafico-u',horas,'u');$('tabela').replaceChildren();for(let h=0;h<24;h++){const r=horas[h],tr=document.createElement('tr');const valores=r?[String(h).padStart(2,'0')+':00',r.n,[r.t.min,r.t.media,r.t.max].map(fmt).join(' / '),[r.u.min,r.u.media,r.u.max].map(fmt).join(' / ')]:[String(h).padStart(2,'0')+':00','0','Sem registros','Sem registros'];valores.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td);});$('tabela').append(tr);}}
-
-function exibirCSV(){renderizar(agrupar(registros.filter(r=>r.dia===$('dia').value)));}
 
 function escolherDias(dias,anterior){$('dia').replaceChildren();dias.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d.split('-').reverse().join('/');$('dia').append(o);});$('dia').disabled=!dias.length;if(dias.includes(anterior))$('dia').value=anterior;if(!dias.length){const o=document.createElement('option');o.value='';o.textContent='Sem registros';$('dia').append(o);}}
 
@@ -237,10 +229,6 @@ function converterAmostras(amostras){if(!Array.isArray(amostras))throw Error('Hi
 
 $('dia').addEventListener('change',()=>window.dispatchEvent(new Event('history-day')));
 
-$('usar-esp').addEventListener('click',atualizarEstado);
-
-$('arquivo').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;const g=++geracao;try{if(f.size>2000000)throw Error('Use um CSV de até 2 MB.');const novos=parseCSV(await f.text());if(g!==geracao)return;registros=novos;fonte='csv';window.dispatchEvent(new CustomEvent('process-csv-import',{detail:novos}));$('baixar-csv').hidden=true;escolherDias([...new Set(registros.map(r=>r.dia))].sort().reverse(),'');$('mensagem-csv').textContent=registros.length+' amostras do arquivo '+f.name+'. Arquivo local; sem envio ao servidor. Use Atualizar histórico para voltar às leituras da nuvem.';exibirCSV();}catch(err){if(g===geracao)$('mensagem-csv').textContent=err.message+' O histórico anterior foi mantido.';}});
-
 setInterval(verificarIdadeInternet,1000);
 
 window.addEventListener('offline',semConexao);
@@ -253,5 +241,5 @@ atualizarEstado();setInterval(atualizarEstado,30000);
 
 
 
-</script><script src="model.js?v=integrada072"></script><script src="drying-model.js?v=lote20261104"></script><script src="planner.js?v=lote20261104"></script><script src="process-source.js?v=lote20261104"></script><script src="fornadas-store.js?v=integrada072"></script><script src="climate-seed.js?v=integrada072"></script><script src="live-source.js?v=confirmacooler20261104"></script><script src="history-client.js?v=integrada072"></script><script src="fornadas-shared.js?v=integrada072"></script><script src="app.js?v=pilhalote20261104"></script><script src="retro-sounds.js"></script><script src="scene-artwork.js?v=20261103b"></script><script src="weather-scene.js?v=20261103b"></script><script src="scene-motion.js?v=vento20261104b"></script><script src="scene-clock.js?v=mobile20261101"></script><script src="scene-calendar.js?v=festas20261101"></script><script src="scene-effects.js?v=vento20261104b"></script><script src="scene-owl.js?v=20261103"></script><script src="./hatch-config.js"></script><script src="./hatch-ui.js?v=explica20261104"></script></body></html>
+</script><script src="model.js?v=integrada072"></script><script src="drying-model.js?v=lote20261104"></script><script src="planner.js?v=lote20261104"></script><script src="process-source.js?v=lote20261104"></script><script src="fornadas-store.js?v=integrada072"></script><script src="climate-seed.js?v=integrada072"></script><script src="live-source.js?v=confirmacooler20261104"></script><script src="history-client.js?v=painelsimples20261104"></script><script src="fornadas-shared.js?v=integrada072"></script><script src="app.js?v=painelsimples20261104"></script><script src="retro-sounds.js"></script><script src="scene-artwork.js?v=20261103b"></script><script src="weather-scene.js?v=20261103b"></script><script src="scene-motion.js?v=vento20261104b"></script><script src="scene-clock.js?v=mobile20261101"></script><script src="scene-calendar.js?v=festas20261101"></script><script src="scene-effects.js?v=vento20261104b"></script><script src="scene-owl.js?v=20261103"></script><script src="./hatch-config.js"></script><script src="./hatch-ui.js?v=explica20261104"></script></body></html>
 

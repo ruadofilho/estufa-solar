@@ -16,19 +16,17 @@
  }
  function csv(rows){return 'data_hora_Brasilia,epoch,temperatura_C,umidade_relativa_pct\n'+rows.map(r=>new Date(r.epoch*1000-10800000).toISOString().slice(0,19).replace('T',' ')+','+r.epoch+','+r.t+','+r.u).join('\n');}
  function start(){
-  const el=id=>document.getElementById(id);let busy=false,downloadURL=null;
+  const el=id=>document.getElementById(id);let busy=false;
   async function json(path){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{const r=await fetch(base+path,{method:'GET',cache:'no-store',credentials:'omit',signal:controller.signal});if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e;}return await r.json();}finally{clearTimeout(timeout);}}
-  function clearDownload(){if(downloadURL)URL.revokeObjectURL(downloadURL);downloadURL=null;el('baixar-csv').hidden=true;el('baixar-csv').removeAttribute('href');}
   async function loadDay(day,g){
    if(!day)return;
    const data=await json('/api/historico?dia='+encodeURIComponent(day));
    const decoded=decode(data,day);if(g!==geracao)return;
-   registros=decoded.rows;fonte='cloud';renderizar(agrupar(registros));clearDownload();
-   if(registros.length){downloadURL=URL.createObjectURL(new Blob([csv(registros)],{type:'text/csv;charset=utf-8'}));el('baixar-csv').href=downloadURL;el('baixar-csv').download='estufa-'+day+'.csv';el('baixar-csv').hidden=false;}
+   registros=decoded.rows;fonte='cloud';renderizar(agrupar(registros));
    el('mensagem-csv').textContent=registros.length?registros.length+' leituras de temperatura e umidade do ar. Horário de Brasília. As leituras são gravadas mesmo com o site fechado. Este gráfico se atualiza a cada dois minutos enquanto estiver visível.':'Ainda não há leituras válidas neste dia.';
    if(decoded.failures)el('mensagem-csv').textContent+=' '+decoded.failures+' registros de falha do sensor não entram nas médias.';
   }
-  function error(e,g){if(g!==geracao)return;el('mensagem-csv').textContent=([404,503].includes(e.status)?'O histórico ainda não está disponível no receptor. Após configurar o banco e publicar o novo código, as leituras começarão a aparecer.':'Não foi possível atualizar o histórico. Tente novamente. Os gráficos anteriores, se houver, foram mantidos.')+' O painel ao vivo continua independente.';}
+  function error(e,g){if(g!==geracao)return;el('mensagem-csv').textContent=([404,503].includes(e.status)?'O histórico ainda não está disponível no receptor. Após configurar o banco e publicar o novo código, as leituras começarão a aparecer.':'Não foi possível atualizar o histórico. Os gráficos anteriores, se houver, foram mantidos.')+' O painel ao vivo continua independente.';}
   async function refresh(){
    if(busy)return;busy=true;const g=++geracao;el('mensagem-csv').textContent='Consultando histórico da estufa…';
    try{
@@ -36,14 +34,12 @@
     if(!Array.isArray(data.dias)||data.dias.length>366||!data.dias.every(validDay))throw Error('Dias inválidos.');
     const days=[...new Set(data.dias)].sort().reverse(),previous=fonte==='cloud'?el('dia').value:'';
     escolherDias(days,previous);fonte='cloud';
-    if(!days.length){registros=[];clearDownload();renderizar(Array(24).fill(null));el('mensagem-csv').textContent='O armazenamento está pronto. Aguardando a próxima transmissão da ESP32.';return;}
+    if(!days.length){registros=[];renderizar(Array(24).fill(null));el('mensagem-csv').textContent='O armazenamento está pronto. Aguardando a próxima transmissão da ESP32.';return;}
     await loadDay(el('dia').value,g);
    }catch(e){error(e,g);}finally{busy=false;}
   }
-  window.addEventListener('history-day',async()=>{if(fonte==='csv'){exibirCSV();return;}const g=++geracao;clearDownload();renderizar(Array(24).fill(null));el('mensagem-csv').textContent='Carregando o dia selecionado…';try{await loadDay(el('dia').value,g);}catch(e){error(e,g);}});
-  el('usar-esp').addEventListener('click',refresh);
-  el('tab-historico').addEventListener('click',()=>{if(fonte!=='csv'||!registros.length)refresh();});
-  el('arquivo').addEventListener('change',clearDownload);
+  window.addEventListener('history-day',async()=>{const g=++geracao;renderizar(Array(24).fill(null));el('mensagem-csv').textContent='Carregando o dia selecionado…';try{await loadDay(el('dia').value,g);}catch(e){error(e,g);}});
+  window.addEventListener('history-open',refresh);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!el('historico').hidden&&fonte==='cloud')refresh();});
   setInterval(()=>{if(!document.hidden&&!el('historico').hidden&&fonte==='cloud')refresh();},120000);
   fonte='cloud';if(!el('historico').hidden)refresh();
