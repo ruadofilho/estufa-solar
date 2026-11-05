@@ -32,6 +32,42 @@ const seasons={
 };
 const dateFormat=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit'});
 let season=null,weather=null,isNight=false,captionDate='';
+let solarDays=[],lastLightingSecond=-1;
+function blendColor(a,b,fraction){
+ const channels=a.map((channel,index)=>Math.round(channel+(b[index]-channel)*fraction));
+ return 'rgb('+channels.join(',')+')';
+}
+function updateDaylight(now){
+ const second=Math.floor(now/1000);
+ if(second===lastLightingSecond)return;
+ lastLightingSecond=second;
+ const day=solarDays.find(day=>now>=day.start&&now<day.start+86400000);
+ if(!day)return;
+ const minute=60000;
+ const dawn=Math.max(0,Math.min(1,(now-day.rise+45*minute)/(80*minute)));
+ const dusk=Math.max(0,Math.min(1,(day.set+45*minute-now)/(80*minute)));
+ const light=Math.min(dawn,dusk);
+ const cloudy=!['clear','partly'].includes(svg.dataset.weather);
+ const top=cloudy?[124,138,156]:[97,157,193];
+ const bottom=cloudy?[179,190,200]:[184,215,223];
+ const twilight=4*light*(1-light);
+ const horizon=bottom.map((value,index)=>Math.round(value+( [224,158,137][index]-value)*twilight*.5));
+ sky.querySelector('.sky-top').style.stopColor=blendColor([38,49,87],top,light);
+ sky.querySelector('.sky-bottom').style.stopColor=blendColor([65,70,105],horizon,light);
+ svg.closest('.mission-art').style.background=blendColor([48,58,96],top,light);
+ clouds.style.fill=blendColor([104,112,140],[213,219,225],light);
+ sky.querySelector('.sky-moon').style.opacity=String(1-light);
+ sky.querySelector('.sky-stars').style.opacity=String((1-light)*(cloudy?.12:1));
+ const daytime=now>=day.rise&&now<day.set;
+ svg.dataset.day=String(daytime);
+ const nextNight=!daytime;
+ if(nextNight!==isNight){isNight=nextNight;caption();}
+ const sun=sky.querySelector('.sky-sun');
+ const progress=Math.max(0,Math.min(1,(now-day.rise)/(day.set-day.rise)));
+ sun.setAttribute('transform','translate('+(30+340*progress-55)+' '+(157-119*Math.sin(Math.PI*progress)-40)+')');
+ sun.style.display=daytime&&!cloudy?'inline':'none';
+ sun.style.opacity=String(Math.min(1,light*1.4));
+}
 function seasonAt(monthDay){
  // Approximate seasonal transitions for the Southern Hemisphere.
  return monthDay>=1221||monthDay<320?'Verão':monthDay<621?'Outono':monthDay<922?'Inverno':'Primavera';
@@ -104,6 +140,7 @@ const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
 let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 function draw(now){
  drawGarden(now);
+ updateDaylight(now);
  clouds.setAttribute('transform','translate('+(-515*((now%105000)/105000))+' 0)');
  precipitation.setAttribute('transform','translate(0 '+(-18+26*((now%950)/950))+')');
  const wifi=svg.querySelector('#scene-esp .esp-signal');
@@ -164,9 +201,14 @@ async function refreshWeather(){
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),10000);
  try{
-  const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.50&longitude=-47.46&current=weather_code,is_day&timezone=America%2FSao_Paulo',{signal:controller.signal});
+  const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.50&longitude=-47.46&current=weather_code,is_day&daily=sunrise,sunset&timeformat=unixtime&forecast_days=3&timezone=America%2FSao_Paulo',{signal:controller.signal});
   if(!res.ok)return;
-  const current=(await res.json()).current;
+  const data=await res.json(),current=data.current;
+  if(Array.isArray(data.daily?.time)){
+   solarDays=data.daily.time.map((start,index)=>({
+    start:start*1000,rise:data.daily.sunrise?.[index]*1000,set:data.daily.sunset?.[index]*1000
+   })).filter(day=>Number.isFinite(day.start)&&Number.isFinite(day.rise)&&Number.isFinite(day.set)&&day.set>day.rise);
+  }
   const code=current?.weather_code;
   isNight=current?.is_day===0;
   weather=!Number.isFinite(code)?null:code===0?'Céu limpo':code<=2?'Parcialmente nublado':code===3?'Nublado':code<=48?'Neblina':code>=95?'Trovoadas':code>=71&&code<=77?'Neve':'Chuva';
@@ -178,6 +220,8 @@ async function refreshWeather(){
    if(snow)weather="Neve";
   }
   caption();
+  lastLightingSecond=-1;
+  updateDaylight(Date.now());
  }catch{}finally{clearTimeout(timeout);}
 }
 refreshWeather();setInterval(()=>{if(!document.hidden)refreshWeather();},15*60000);
