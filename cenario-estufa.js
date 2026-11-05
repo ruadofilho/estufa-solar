@@ -79,6 +79,7 @@ const owl=node('g',{id:'scene-owl',role:'img','aria-label':'Coruja pousada no te
 svg.insertBefore(owl,clock);
 owl.innerHTML='<path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-6-10H6v9H-6z" fill="#efccbd"/><path d="M-7-1h5v3h-5zm9 0h5v3H2z" fill="#efb86c"/><g class="owl-head"><path d="M-10-15v-11l6 4h8l6-4v11l-3 3H-7z" fill="#c79cb8"/><path d="M-8-21H8v7H-8z" fill="#fff4d8"/><path class="owl-pupils" d="M-6-20h2v4h-2zm10 0h2v4H4z" fill="#344057"/><path class="owl-blink" d="M-7-18h5v1h-5zm9 0h5v1H2z" fill="#344057"/><path d="M-2-15h4l-2 3z" fill="#eaa658"/></g>';
 const pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
+const wings=node('path',{d:'M-10-13l-16-8v7l16 9zm20 0l16-8v7l-16 9z',fill:'#ab82a9'},owl);
 const routes=[
  'M116 108Q121 95 131 104L175 129Q185 134 182 150Q173 162 152 149L121 132Q111 126 116 108Z',
  'M116 148Q130 135 147 145L176 157Q186 163 183 179Q179 189 162 186L125 178Q113 173 116 148Z',
@@ -91,13 +92,30 @@ const gusts=Array.from({length:7},(_,i)=>{
 });
 const motion=matchMedia('(prefers-reduced-motion: reduce)');
 let frame=0,last=-Infinity;
+let owlProgress=0,lastOwlDraw=null;
 function draw(now){
  drawGarden(now);
  const still=motion.matches;
- const shut=!still&&(now%6700<170);
+ const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
+ const arriving=svg.dataset.day==='false'&&!wet;
+ const elapsed=lastOwlDraw===null?0:Math.max(0,now-lastOwlDraw);
+ lastOwlDraw=now;
+ const step=elapsed/1700;
+ owlProgress=still?Number(arriving):Math.max(0,Math.min(1,owlProgress+(arriving?step:-step)));
+ const flying=owlProgress>0&&owlProgress<1;
+ const x=-30+137*owlProgress;
+ const y=44+36*owlProgress-23*Math.sin(Math.PI*owlProgress);
+ owl.style.display=owlProgress>0?'':'none';
+ owl.setAttribute('transform','translate('+x+' '+y+')');
+ wings.style.display=flying?'':'none';
+ wings.setAttribute('transform','scale(1 '+(.7+.45*Math.sin(now/37))+')');
+ const label=flying?(arriving?'Coruja chegando ao telhado':'Coruja voando para longe'):'Coruja pousada no telhado';
+ if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
+ const shut=!still&&!flying&&now%6700<170;
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
+  g.style.display=wet?'none':'';
   const u=still?0:now/1000,x0=[35,68,230,256,324,367][i];
   g.setAttribute('transform','translate('+(x0+9*Math.sin(u*.73+i)).toFixed(2)+' '+(180+(i%3)*9+8*Math.cos(u*.82+i*2)).toFixed(2)+')');
   g.setAttribute('opacity',still?(i%2?'0':'.65'):Math.pow(Math.max(0,Math.sin(u*(1.05+i*.08)+i*2.1)),4).toFixed(2));

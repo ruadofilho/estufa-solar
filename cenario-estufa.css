@@ -8,17 +8,10 @@
 .masthead-brand{display:flex;align-items:center;gap:12px}
 .masthead-brand .brand-piano{width:clamp(48px,8vw,82px);height:auto;flex:none}
 .owl-scene{position:relative;width:100%;max-width:720px}
-.piano-shop{
- position:absolute;left:2.5%;top:3%;padding:4px 3px;
- font:bold clamp(9px,1.1vw,14px)/1.15 "Courier New",monospace;
- color:#ffb2ad;text-decoration:none;white-space:nowrap;
- text-shadow:0 0 2px #42100f,0 0 3px #941b18,0 0 6px #f14942;
-}
-.owl-scene:has(svg[data-day="true"]) .piano-shop{
- color:#e0f4ff;text-shadow:0 0 2px #082550,0 0 3px #144e96,0 0 6px #1266cc;
-}
-.piano-shop:hover{text-decoration:underline}
-.piano-shop:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.piano-shop-card{margin-top:18px;text-align:center}
+.piano-shop{display:inline-block;padding:10px 14px;color:#a62420;font-weight:600;text-decoration:underline;text-underline-offset:4px}
+.piano-shop:hover{color:#861c19}
+.piano-shop:focus-visible{outline:2px solid #a62420;outline-offset:3px}
 .kiln-intro{max-width:66ch;margin:.4rem 0 0;line-height:1.55}
 .sky-sun,.sky-clouds,.sky-precipitation,.sky-fog,.rain-drop,.snow-flake{display:none}
 [data-day="true"] .sky-top{stop-color:#619dc1}
