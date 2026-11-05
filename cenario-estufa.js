@@ -15,15 +15,88 @@ for(const [x,y,scale] of [[5,25,1],[135,37,1.25],[280,18,1.1],[375,45,1.15],[520
  node("path",{d:"M0 23h85v2H0z",class:"cloud-shadow"},group);
 }
 const precipitation=node("g",{class:"sky-precipitation"},sky);
-for(let i=0;i<30;i++){
- const x=(i*53)%400,y=53+(i*31)%145;
- node("path",{d:"M"+x+" "+y+"l-5 11",class:"rain-drop"},precipitation);
+const rainDrops=[];
+for(let i=0;i<78;i++){
+ const x=(i*53)%400,y=(i*31)%220;
+ const seed=Math.sin((i+1)*127.1)*43758.5453;
+ const verticalSeed=Math.sin((i+1)*311.7)*96453.9127;
+ rainDrops.push({
+  drop:node("path",{d:"M0 0l-4 12",class:"rain-drop"},precipitation),
+  x:(seed-Math.floor(seed))*420,
+  y:(verticalSeed-Math.floor(verticalSeed))*245
+ });
  node("rect",{x,y,width:2,height:2,class:"snow-flake"},precipitation);
 }
 const fog=node("path",{class:"sky-fog",d:"M0 91h125m43 0h180m-90 17h142M0 124h186m40 0h174"},sky);
 const clock=svg.querySelector('.scene-clock');
 const garden=node('g',{'aria-hidden':'true'});
 svg.insertBefore(garden,clock);
+const puddles=node('g',{id:'garden-puddles','aria-hidden':'true'});
+svg.insertBefore(puddles,clock);
+for(const [x,y,width] of [[47,211,30],[232,210,31],[341,214,37]]){
+ node('path',{d:'M'+x+' '+y+'h'+width+'v2h4v2h-4v2h-'+width+'v-2h-4v-2h4z',fill:'#80b8bf',stroke:'#547f93','stroke-width':1},puddles);
+ node('path',{d:'M'+(x+4)+' '+(y+2)+'h'+(width-8),stroke:'#d5ebdf','stroke-width':1},puddles);
+}
+const frog=node('g',{id:'scene-frog',role:'img','aria-label':'Sapinho descansando na chuva'});
+frog.innerHTML=
+ '<path fill="#416947" d="M-10-3h20v5h4v3H5V3H-5v2h-9V2h4z"/>'+
+ '<path fill="#83ae5b" d="M-8-9h5v-3h5v3h6v-3h5v7h3v5H-9V-5h1z"/>'+
+ '<path fill="#d4df91" d="M-5-2H5v4H-5z"/>'+
+ '<path fill="#fff4ce" d="M-6-9h4v4h-4zm10 0h4v4H4z"/>'+
+ '<path fill="#263e35" d="M-4-8h2v2h-2zm8 0h2v2H4zM-3-3h6v1h-6z"/>'+
+ '<path class="frog-feet" fill="#699149" d="M-12 2h8v3h-8zm16 0h8v3H4z"/>';
+svg.insertBefore(frog,clock);
+const wren=node('g',{id:'scene-wren',role:'img','aria-label':'Corruíra passeando pelos galhos'});
+wren.innerHTML=
+ '<path fill="#664734" d="M-7-8l-7-9v-4l5 3 7 9z"/>'+
+ '<path fill="#a77a50" d="M-7-10h12v-5h7v3h3v8h-4v4H-4v-3h-4z"/>'+
+ '<path fill="#ddbd86" d="M-4-5h12v5H-2z"/>'+
+ '<path fill="#775338" d="M-7-8H3v4H-5z"/>'+
+ '<path fill="#f2ddb1" d="M6-12h6v1H6z"/>'+
+ '<path fill="#26362d" d="M10-11h2v2h-2z"/>'+
+ '<path fill="#c8a46c" d="M15-10h4l-4 3z"/>'+
+ '<path stroke="#70513c" stroke-width="1.5" d="M-1 0v3m5-3v3"/>';
+svg.insertBefore(wren,clock);
+// Rain falls in front of the garden and equipment, behind the clock.
+svg.insertBefore(precipitation,clock);
+let rainStarted=null,rainStopped=null,previousRain=false;
+function drawRainVisitors(now){
+ const raining=svg.dataset.weather==='rain';
+ if(raining&&!previousRain){rainStarted=now;rainStopped=null;}
+ if(!raining&&previousRain)rainStopped=now;
+ previousRain=raining;
+ const rainAge=rainStarted===null?0:Math.max(0,now-rainStarted);
+ const water=raining?Math.min(1,rainAge/30000):rainStopped===null?0:Math.max(0,1-(now-rainStopped)/120000);
+ puddles.style.display=water>0?'':'none';
+ puddles.setAttribute('opacity',water.toFixed(2));
+ frog.style.display=raining?'':'none';
+ if(raining){
+  const cycleMs=305000;
+  const cycle=Math.floor(rainAge/cycleMs);
+  const phase=rainAge%cycleMs;
+  const walking=phase>=300000;
+  const fraction=walking?(phase-300000)/5000:0;
+  const direction=cycle%2===0?1:-1;
+  const start=direction===1?236:266;
+  const x=start+direction*30*fraction;
+  frog.setAttribute('transform','translate('+x+' '+(205+(walking?Math.sin(fraction*Math.PI*16)*.7:0))+') scale('+direction+' 1)');
+  frog.setAttribute('aria-label',walking?'Sapinho andando na chuva':'Sapinho descansando na chuva');
+ }
+ wren.style.display=!raining&&rainStopped!==null?'':'none';
+ if(!raining&&rainStopped!==null){
+  const perches=[[328,138],[312,112],[276,155]];
+  const age=Math.max(0,now-rainStopped);
+  const leg=Math.floor(age/10000);
+  const phase=age%10000;
+  const from=perches[leg%perches.length],to=perches[(leg+1)%perches.length];
+  const hopping=phase>=8500;
+  const fraction=hopping?(phase-8500)/1500:0;
+  const x=from[0]+(to[0]-from[0])*fraction;
+  const y=from[1]+(to[1]-from[1])*fraction-12*Math.sin(Math.PI*fraction);
+  const direction=to[0]>=from[0]?1:-1;
+  wren.setAttribute('transform','translate('+x+' '+y+') scale('+direction+' 1)');
+ }
+}
 const seasons={
  'Primavera':{leaves:['#548764','#81a762'],marks:'#efa8bb',ground:'#8ab774',kind:'flower'},
  'Verão':{leaves:['#39745b','#5d9d62'],marks:'#e4bf66',ground:'#70a96d',kind:'berry'},
@@ -143,7 +216,12 @@ function draw(now){
  drawGarden(now);
  updateDaylight(now);
  clouds.setAttribute('transform','translate('+(-515*((now%105000)/105000))+' 0)');
- precipitation.setAttribute('transform','translate(0 '+(-18+26*((now%950)/950))+')');
+ rainDrops.forEach(({drop,x:originX,y:originY})=>{
+  const x=((originX-now/55)%420+420)%420;
+  const y=((originY+now/7)%245)-15;
+  drop.setAttribute('transform','translate('+x+' '+y+')');
+ });
+ drawRainVisitors(now);
  const wifi=svg.querySelector('#scene-esp .esp-signal');
  if(wifi){
   const connected=svg.querySelector('#scene-esp').classList.contains('esp-online');
