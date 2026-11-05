@@ -71,16 +71,20 @@ function drawRainVisitors(now){
  puddles.setAttribute('opacity',water.toFixed(2));
  frog.style.display=raining?'':'none';
  if(raining){
-  const cycleMs=305000;
-  const cycle=Math.floor(rainAge/cycleMs);
-  const phase=rainAge%cycleMs;
-  const walking=phase>=300000;
-  const fraction=walking?(phase-300000)/5000:0;
-  const direction=cycle%2===0?1:-1;
-  const start=direction===1?236:266;
-  const x=start+direction*30*fraction;
-  frog.setAttribute('transform','translate('+x+' '+(205+(walking?Math.sin(fraction*Math.PI*16)*.7:0))+') scale('+direction+' 1)');
-  frog.setAttribute('aria-label',walking?'Sapinho andando na chuva':'Sapinho descansando na chuva');
+  const stops=[[247,206,2400],[300,204,900],[359,210,2200],[300,204,800],[247,206,1800],[190,205,700],[130,205,900],[62,207,2300],[120,205,800],[185,205,700]];
+  const hopMs=720;
+  const cycleMs=stops.reduce((sum,stop)=>sum+stop[2]+hopMs,0);
+  let phase=rainAge%cycleMs,leg=0;
+  while(phase>=stops[leg][2]+hopMs){phase-=stops[leg][2]+hopMs;leg++;}
+  const from=stops[leg],to=stops[(leg+1)%stops.length];
+  const hopping=phase>=from[2];
+  const fraction=hopping?(phase-from[2])/hopMs:0;
+  const arc=Math.sin(Math.PI*fraction);
+  const direction=to[0]>=from[0]?1:-1;
+  const x=from[0]+(to[0]-from[0])*fraction;
+  const y=from[1]+(to[1]-from[1])*fraction-26*arc;
+  frog.setAttribute('transform','translate('+x+' '+y+') scale('+direction*(1+.12*arc)+' '+(1-.1*arc)+')');
+  frog.setAttribute('aria-label',hopping?'Sapinho pulando pelo jardim e pelas poças':'Sapinho descansando entre os pulos');
  }
  wren.style.display=!raining&&rainStopped!==null?'':'none';
  if(!raining&&rainStopped!==null){
