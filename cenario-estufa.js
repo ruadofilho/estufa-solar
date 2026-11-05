@@ -48,14 +48,15 @@ function updateDaylight(now){
  const dusk=Math.max(0,Math.min(1,(day.set+45*minute-now)/(80*minute)));
  const light=Math.min(dawn,dusk);
  const cloudy=!['clear','partly'].includes(svg.dataset.weather);
- const top=cloudy?[124,138,156]:[97,157,193];
- const bottom=cloudy?[179,190,200]:[184,215,223];
+ const top=cloudy?[159,177,190]:[97,157,193];
+ const bottom=cloudy?[214,222,225]:[184,215,223];
  const twilight=4*light*(1-light);
  const horizon=bottom.map((value,index)=>Math.round(value+( [224,158,137][index]-value)*twilight*.5));
  sky.querySelector('.sky-top').style.stopColor=blendColor([38,49,87],top,light);
  sky.querySelector('.sky-bottom').style.stopColor=blendColor([65,70,105],horizon,light);
  svg.closest('.mission-art').style.background=blendColor([48,58,96],top,light);
  clouds.style.fill=blendColor([104,112,140],[213,219,225],light);
+ sky.querySelector('path[fill="#464f72"]').style.fill=blendColor([70,79,114],[119,151,139],light);
  sky.querySelector('.sky-moon').style.opacity=String(1-light);
  sky.querySelector('.sky-stars').style.opacity=String((1-light)*(cloudy?.12:1));
  const daytime=now>=day.rise&&now<day.set;
