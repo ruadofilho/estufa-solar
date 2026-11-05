@@ -118,6 +118,7 @@ function render(){
  const b=active(),t=state.telemetry;
  window.FabricaSceneTelemetry=t;window.dispatchEvent(new CustomEvent("scene-telemetry",{detail:t}));
  document.getElementById('kiln-wind')?.classList.toggle('coolers-active',t?.status==='online'&&t.coolers===true);
+ document.getElementById('scene-esp')?.classList.toggle('esp-online',t?.status==='online');
  const fresh=t?.status==='online',stamp=v=>new Date(v).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
  $$('temperatura').textContent=t?.airValid?n(t.airT):'--';$$('umidade').textContent=t?.airValid?n(t.airRH):'--';
  $$('external-temperature').textContent=t?.externalValid?n(t.externalT):'--';$$('external-humidity').textContent=t?.externalValid?n(t.externalRH):'--';

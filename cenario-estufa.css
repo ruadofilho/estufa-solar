@@ -11,6 +11,7 @@
 .sync-bar:has(#sync-status:empty):not(:has(#sync-migrate:not([hidden]))){display:none}
 .clock-action-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .clock-frame{fill:#202b36;stroke:#758a84;stroke-width:2}
+#scene-esp .esp-signal{color:#bdf48d;filter:drop-shadow(0 0 3px #6fbf63)}
 .kiln-intro{max-width:66ch;margin:.4rem 0 0;line-height:1.55}
 .sky-sun,.sky-clouds,.sky-precipitation,.sky-fog,.rain-drop,.snow-flake{display:none}
 [data-day="true"] .sky-top{stop-color:#619dc1}
