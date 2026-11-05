@@ -11,6 +11,9 @@
 .sync-bar:has(#sync-status:empty):not(:has(#sync-migrate:not([hidden]))){display:none}
 .clock-action-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .clock-frame{fill:#202b36;stroke:#758a84;stroke-width:2}
+.kiln-intro-title{display:flex;align-items:center;gap:14px}
+.kiln-intro-title img{width:84px;height:auto;flex:none}
+@media(max-width:720px){.kiln-intro-title{gap:10px}.kiln-intro-title img{width:64px}}
 #scene-esp .esp-signal{color:#bdf48d;filter:drop-shadow(0 0 3px #6fbf63)}
 .kiln-intro{max-width:66ch;margin:.4rem 0 0;line-height:1.55}
 .sky-sun,.sky-clouds,.sky-precipitation,.sky-fog,.rain-drop,.snow-flake{display:none}
@@ -36,7 +39,6 @@
 .sky-fog{stroke:#e0e5ec;stroke-width:5;opacity:.36}
 @keyframes cloud-crossing{to{transform:translateX(-515px)}}
 @keyframes weather-fall{from{transform:translateY(-18px)}to{transform:translateY(8px)}}
-@media(prefers-reduced-motion:reduce){.sky-clouds,.sky-precipitation{animation:none!important}}
 @media(max-width:560px){#painel>.intro{flex-wrap:wrap}}
 #sky-caption{text-align:center}
 #scene-clock-colon{opacity:1!important}

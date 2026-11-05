@@ -90,14 +90,12 @@ const gusts=Array.from({length:7},(_,i)=>{
  node('path',{d:'M-6-2h8q3 0 3-2m-13 5h10m-7 3h8l2-2'},g);
  return g;
 });
-const motion=matchMedia('(prefers-reduced-motion: reduce)');
 let frame=0,last=-Infinity;
 const offstage=[-30,44],branch=[276,155],roof=[107,80];
 const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
 let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 function draw(now){
  drawGarden(now);
- const still=motion.matches;
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
  const visiting=svg.dataset.day==='false'&&!wet;
  owlVisitStart=visiting?(owlVisitStart??now):null;
@@ -108,7 +106,7 @@ function draw(now){
   owlTarget=target;
   owlFlightStart=now;
  }
- const progress=still?1:Math.min(1,Math.max(0,(now-owlFlightStart)/flightMs));
+ const progress=Math.min(1,Math.max(0,(now-owlFlightStart)/flightMs));
  const flying=owlOrigin!==owlTarget&&progress<1;
  owlPosition=flying?[
   owlOrigin[0]+(owlTarget[0]-owlOrigin[0])*progress,
@@ -123,30 +121,34 @@ function draw(now){
   ?(target===offstage?'Coruja voando para longe':'Coruja chegando ao '+(target===branch?'galho':'telhado'))
   :(target===branch?'Coruja pousada no galho':'Coruja pousada no telhado');
  if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
- const shut=!still&&!flying&&now%6700<170;
+ const shut=!flying&&now%6700<170;
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
   g.style.display=wet?'none':'';
-  const u=still?0:now/1000,x0=[35,68,230,256,324,367][i];
+  const u=now/1000,x0=[35,68,230,256,324,367][i];
   g.setAttribute('transform','translate('+(x0+9*Math.sin(u*.73+i)).toFixed(2)+' '+(180+(i%3)*9+8*Math.cos(u*.82+i*2)).toFixed(2)+')');
-  g.setAttribute('opacity',still?(i%2?'0':'.65'):Math.pow(Math.max(0,Math.sin(u*(1.05+i*.08)+i*2.1)),4).toFixed(2));
+  g.setAttribute('opacity',Math.pow(Math.max(0,Math.sin(u*(1.05+i*.08)+i*2.1)),4).toFixed(2));
  });
  if(wind.classList.contains('coolers-active'))gusts.forEach((g,i)=>{
   const {p,len}=routes[i%routes.length];
-  const phase=((still?0:now/1000*(.20+(i%3)*.035))+(i+1)/7)%1,at=phase*len;
+  const phase=(now/1000*(.20+(i%3)*.035)+(i+1)/7)%1,at=phase*len;
   const a=p.getPointAtLength(at),b=p.getPointAtLength((at+.9)%len),angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
   g.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+angle+')');
-  g.setAttribute('opacity',still?'.8':(.56+.36*Math.sin(phase*2*Math.PI+i)).toFixed(2));
+  g.setAttribute('opacity',(.56+.36*Math.sin(phase*2*Math.PI+i)).toFixed(2));
  });
 }
 function tick(time){frame=0;if(document.hidden)return;if(time-last>=32){last=time;draw(Date.now());}frame=requestAnimationFrame(tick);}
 function sync(){if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0;return;}draw(Date.now());if(!frame)frame=requestAnimationFrame(tick);}
-document.addEventListener('visibilitychange',sync);motion.addEventListener('change',sync);sync();
+document.addEventListener('visibilitychange',sync);
+window.addEventListener('pageshow',sync);
+sync();
 
 async function refreshWeather(){
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),10000);
  try{
-  const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.50&longitude=-47.46&current=weather_code,is_day&timezone=America%2FSao_Paulo',{signal:AbortSignal.timeout(10000)});
+  const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.50&longitude=-47.46&current=weather_code,is_day&timezone=America%2FSao_Paulo',{signal:controller.signal});
   if(!res.ok)return;
   const current=(await res.json()).current;
   const code=current?.weather_code;
@@ -160,7 +162,7 @@ async function refreshWeather(){
    if(snow)weather="Neve";
   }
   caption();
- }catch{}
+ }catch{}finally{clearTimeout(timeout);}
 }
 refreshWeather();setInterval(()=>{if(!document.hidden)refreshWeather();},15*60000);
 })();
