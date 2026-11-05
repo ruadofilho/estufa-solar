@@ -11,10 +11,6 @@
 .sync-bar:has(#sync-status:empty):not(:has(#sync-migrate:not([hidden]))){display:none}
 .clock-action-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
 .clock-frame{fill:#202b36;stroke:#758a84;stroke-width:2}
-.piano-shop-card{margin-top:18px;text-align:center}
-.piano-shop{display:inline-block;padding:10px 14px;color:#a62420;font-weight:600;text-decoration:underline;text-underline-offset:4px}
-.piano-shop:hover{color:#861c19}
-.piano-shop:focus-visible{outline:2px solid #a62420;outline-offset:3px}
 .kiln-intro{max-width:66ch;margin:.4rem 0 0;line-height:1.55}
 .sky-sun,.sky-clouds,.sky-precipitation,.sky-fog,.rain-drop,.snow-flake{display:none}
 [data-day="true"] .sky-top{stop-color:#619dc1}
