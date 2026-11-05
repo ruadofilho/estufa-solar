@@ -50,15 +50,23 @@ function drawGarden(now){
  if(season===key)return;season=key;
  const {leaves,marks,ground,kind}=seasons[key];
  garden.innerHTML=
-  '<path fill="#58413e" d="M292 201h8V109h12v92h10v4h-30zM270 155h19v-4h7v-5h7v9h-7v5h-26zM310 145h8v-6h9v-5h8v6h-8v6h-9v6h-8z"/>'+
-  '<path fill="#a07659" d="M302 127h4v72h-4zM272 155h17v2h-17z"/>'+
-  '<path fill="'+leaves[0]+'" d="M291 48h29v7h14v9h11v13h9v26h-7v14h-14v9h-16v7h-29v-6h-17v-8h-14v-14h-8V83h9V69h13V58h20z"/>'+
-  '<path fill="'+leaves[1]+'" d="M293 53h24v7h13v8h10v11h7v15h-13V83h-14V72h-29v7h-17v12h-16v-9h8V72h12V61h15zM265 101h11v7h15v7h23v8h-24v-5h-15v-7h-10z"/>';
+  '<g class="guava-tree"><title>Goiabeira com frutos no jardim da estufa</title>'+
+  '<path fill="#85694c" d="M292 204v-5h7v-33h-4v-25h-8v-18h-9v-17h7v13h10v18h8v-25h9V88h6v27h-8v26h-5v25h4v33h7v5zM270 155h18v-5h10v7h-9v3h-19zM307 150h10v-10h11v-18h6v21h-11v13h-16z"/>'+
+  '<path fill="#c1a37b" d="M301 166h4v32h-4zM297 141h4v24h-4zM289 124h4v14h-4zM307 115h3v23h-3zM272 155h16v2h-16z"/>'+
+  '<path fill="'+leaves[0]+'" d="M275 56h23v-9h24v7h13v12h-7v9h-24v8h-19v-8h-18V63h8zM251 84h16v-9h19v7h14v13h-6v15h-22v8h-21v-8h-10V95h10zM319 83h15V72h22v8h13v13h-5v16h-18v7h-25v-10h-9V91h7zM278 108h21v-8h19v8h15v15h-8v11h-24v-6h-24v-10h-8v-7h9z"/>'+
+  '<path fill="'+leaves[1]+'" d="M280 58h17v-5h23v7h8v8h-19v7h-20v-7h-15V61h6zM254 89h16v-7h13v7h10v8h-18v8h-22V99h-6v-5h7zM328 85h14v-7h11v8h10v9h-19v8h-22v-9h6zM283 111h18v-6h14v8h10v8h-18v5h-19v-7h-11v-5h6z"/>'+
+  '<path fill="#9bb06c" d="M284 77h8v3h-5v3h-3zM260 105h8v3h-5v3h-3zM342 105h8v3h-5v3h-3z"/></g>';
+ for(const [x,y] of [[283,69],[262,97],[290,102],[344,91],[311,120]]){
+  const fruit=node('g',{class:'guava-fruit',transform:'translate('+x+' '+y+')'},garden);
+  node('path',{d:'M-2-4h4v2h2v5H2v2h-4V3h-2v-5h2z',fill:'#b5c66b'},fruit);
+  node('path',{d:'M-2-1h2v4h-2z',fill:'#e1d77c'},fruit);
+  node('path',{d:'M0-5v2m-1 7h2',stroke:'#58663b','stroke-width':1},fruit);
+ }
  const points=[[21,209],[50,203],[82,213],[211,208],[254,202],[314,207],[342,197],[374,212]];
  for(const [x,y] of points){
   node('path',{d:'M'+x+' '+y+'v-5m0 3l-4-3m4 2l4-4',stroke:ground,fill:'none','stroke-width':2},garden);
  }
- const details=[[270,92],[282,73],[309,60],[326,82],[339,100],[298,106],[318,116],[32,204],[77,201],[337,201],[363,209]];
+ const details=[[32,204],[77,201],[337,201],[363,209]];
  for(const [x,y] of details){
   const mark=node('g',{transform:'translate('+x+' '+y+')',fill:marks},garden);
   if(kind==='flower'){node('path',{d:'M-1-3h2v2h2v2H1v2h-2V1h-2v-2h2z'},mark);node('rect',{x:-1,y:-1,width:2,height:2,fill:'#ffde85'},mark);}
@@ -96,6 +104,13 @@ const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
 let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 function draw(now){
  drawGarden(now);
+ clouds.setAttribute('transform','translate('+(-515*((now%105000)/105000))+' 0)');
+ precipitation.setAttribute('transform','translate(0 '+(-18+26*((now%950)/950))+')');
+ const wifi=svg.querySelector('#scene-esp .esp-signal');
+ if(wifi){
+  const connected=svg.querySelector('#scene-esp').classList.contains('esp-online');
+  wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
+ }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
  const visiting=svg.dataset.day==='false'&&!wet;
  owlVisitStart=visiting?(owlVisitStart??now):null;
@@ -142,6 +157,7 @@ function tick(time){frame=0;if(document.hidden)return;if(time-last>=32){last=tim
 function sync(){if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0;return;}draw(Date.now());if(!frame)frame=requestAnimationFrame(tick);}
 document.addEventListener('visibilitychange',sync);
 window.addEventListener('pageshow',sync);
+window.addEventListener('focus',sync);
 sync();
 
 async function refreshWeather(){
