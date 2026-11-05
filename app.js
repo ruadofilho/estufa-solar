@@ -37,7 +37,7 @@ async function refreshCloud(){
  if(readBusy||cloudBusy)return;readBusy=true;
  try{const d=await cloud.load();const changed=!cloudReady||JSON.stringify(canonical)!==JSON.stringify(d.documento);canonical=structuredClone(d.documento);cloudReady=true;
   if(changed){cloudDocument(d.documento);save();if(!$$('batch-form').dataset.dirty){resetForm(formMode==='new');formRevision=cloud.revision;}const b=active();if(b){ensureClimate(b.location);if(lastProcessBatch!==b.id)refreshProcess();}}
-  syncStatus=cloudToken? 'Lote sincronizado · edição liberada neste aparelho.': 'Lote sincronizado · igual nos seus aparelhos.';render();
+  syncStatus=cloudToken?'Edição liberada neste aparelho.':'';render();
  }catch{syncStatus='Sem acesso aos lotes compartilhados. O cadastro local foi preservado; edição bloqueada até reconectar.';cloudReady=false;render();}
  finally{readBusy=false;render();}
 }
@@ -111,7 +111,6 @@ function renderKilnLoad(){
   if(i>=2)for(const offset of [3,22])spacers.push('<rect x="'+(x+offset)+'" y="'+(y+height).toFixed(2)+'" width="4" height="'+(step-height).toFixed(2)+'"/>');
  }
  wood.innerHTML=visible?'<path d="M119 190v8m24-8v8'+(visible>1?'m12-8v8m24-8v8':'')+'" stroke="#596d6d" stroke-width="4"/><g fill="#785339" class="wood-spacers">'+spacers.join('')+'</g><g fill="#dfa96d" stroke="#87543b" stroke-width="'+Math.min(1.4,step*0.21)+'">'+boards.join('')+'</g>':'';
- $$('kiln-load').textContent=!canonical?'Aguardando lote sincronizado…':count===0?'Estufa vazia':count===1?'1 tábua no lote':count.toLocaleString('pt-BR')+' tábuas no lote'+(count>visible?' · desenho ilustrativo':'');
 }
 
 function render(){

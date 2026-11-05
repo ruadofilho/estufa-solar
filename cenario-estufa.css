@@ -8,6 +8,9 @@
 .masthead-brand{display:flex;align-items:center;gap:12px}
 .masthead-brand .brand-piano{width:clamp(48px,8vw,82px);height:auto;flex:none}
 .owl-scene{position:relative;width:100%;max-width:720px}
+.sync-bar:has(#sync-status:empty):not(:has(#sync-migrate:not([hidden]))){display:none}
+.clock-action-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.clock-frame{fill:#202b36;stroke:#758a84;stroke-width:2}
 .piano-shop-card{margin-top:18px;text-align:center}
 .piano-shop{display:inline-block;padding:10px 14px;color:#a62420;font-weight:600;text-decoration:underline;text-underline-offset:4px}
 .piano-shop:hover{color:#861c19}
