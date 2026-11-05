@@ -140,7 +140,7 @@ function draw(now){
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
-  g.style.display=wet?'none':'';
+  g.style.display=wet||svg.dataset.day!=='false'?'none':'';
   const u=now/1000,x0=[35,68,230,256,324,367][i];
   g.setAttribute('transform','translate('+(x0+9*Math.sin(u*.73+i)).toFixed(2)+' '+(180+(i%3)*9+8*Math.cos(u*.82+i*2)).toFixed(2)+')');
   g.setAttribute('opacity',Math.pow(Math.max(0,Math.sin(u*(1.05+i*.08)+i*2.1)),4).toFixed(2));
