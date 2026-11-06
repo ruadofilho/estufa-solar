@@ -2,7 +2,7 @@
    Coeficientes não medidos permanecem cenários explícitos, nunca precisão certificada. */
 (function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./model.js'):root.EstufaModel);if(typeof module==='object'&&module.exports)module.exports=api;else root.EstufaDrying=api;})(typeof globalThis==='object'?globalThis:this,function(M){
 'use strict';
-const DAY=86400000,HOUR=3600000,MAX_GAP=15*60000;
+const DAY=86400000,HOUR=3600000,MAX_GAP=6*HOUR;
 const DEFAULTS=Object.freeze({density:500,diffusivity:1.25e-10,activation:25000,fsp:30,freeMultiplier:4,solarFactor:.55,ua:M.C.ua,airVolume:.4743,openingIn:.01,openingOut:.01,freeArea:.5,openingHeight:.60,discharge:.60,circulation:100,exchangeFan:0,rateScale:1});
 const bounds={density:[250,900],diffusivity:[1e-12,1e-8],activation:[0,80000],fsp:[20,40],freeMultiplier:[1,10],solarFactor:[.1,.95],ua:[1,30],airVolume:[.1,5],openingIn:[0,.05],openingOut:[0,.05],freeArea:[0,1],openingHeight:[.05,2],discharge:[.1,1],circulation:[0,1000],exchangeFan:[0,100],rateScale:[.1,10]};
 function params(input={}){const p={...DEFAULTS};for(const [k,v] of Object.entries(input)){if(!(k in bounds))continue;if(!Number.isFinite(v)||v<bounds[k][0]||v>bounds[k][1])throw Error('Parâmetro inválido: '+k);p[k]=v;}return p;}
@@ -78,7 +78,7 @@ function integrate(b,c,rows,wood=[],options={}){
  // Cobertura após a última medição da madeira: só esse trecho determina a continuidade do estado atual.
  let sinceAnchor=0;for(let i=0;i<air.length-1;i++){if(air[i+1].epoch-air[i].epoch<=MAX_GAP&&!blocked(air[i].epoch,air[i+1].epoch))sinceAnchor+=Math.max(0,Math.min(now,air[i+1].epoch)-Math.max(anchor?.epoch??start,air[i].epoch));}
  const duration=Math.max(0,now-(anchor?.epoch??start)),coverage=duration?Math.min(1,sinceAnchor/duration):1;
- return {mc,loss,gain,netLoss:loss-gain,coveredHours:covered/HOUR,elapsedHours:Math.max(0,now-start)/HOUR,coverage,days,last,anchor,horizon,parameters:p,air,reference:ref,wood:wr.at(-1),mass:geometry(b,p).dryMass};
+ return {mc,loss,gain,netLoss:loss-gain,coveredHours:covered/HOUR,elapsedHours:Math.max(0,now-start)/HOUR,coverage,estimatedHours:air.slice(1).reduce((sum,z,i)=>{const a=air[i],dt=z.epoch-a.epoch;return sum+(dt>15*60000&&dt<=MAX_GAP&&!blocked(a.epoch,z.epoch)?Math.max(0,Math.min(now,z.epoch)-Math.max(start,a.epoch))/HOUR:0);},0),days,last,anchor,horizon,parameters:p,air,reference:ref,wood:wr.at(-1),mass:geometry(b,p).dryMass};
 }
 // Cenário de futuro: resolve simultaneamente balanço sensível/latente, renovação e cinética.
 function futureHour(mc,b,c,epoch,irradiance,p,weather,previousT){

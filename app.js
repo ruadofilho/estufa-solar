@@ -83,7 +83,7 @@ function drawTimer(b,r){
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Este lote foi encerrado por você.';return;}
  if(r.status==='forecast'){
  main.textContent=new Date(r.earliest).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric'});
- sub.textContent='';
+ sub.textContent=r.history?.estimatedHours>0?'Previsão aproximada · lacunas do histórico preenchidas por estimativa.':'';
  }else if(r.status==='target'){main.textContent='Amostra na meta';sub.textContent=r.message;}
  else if(r.status==='estimatedTarget'){main.textContent='Conferir a madeira';sub.textContent=r.message;}
  else if(r.status==='capacity'){main.textContent='Revisar carga';sub.textContent=r.message;}

@@ -86,10 +86,11 @@ function drawRainVisitors(now){
   frog.setAttribute('transform','translate('+x+' '+y+') scale('+direction*(1+.12*arc)+' '+(1-.1*arc)+')');
   frog.setAttribute('aria-label',hopping?'Sapinho pulando pelo jardim e pelas poças':'Sapinho descansando entre os pulos');
  }
- wren.style.display=!raining&&rainStopped!==null?'':'none';
- if(!raining&&rainStopped!==null){
+ const wrenVisit=svg.dataset.day==='true'&&!raining&&now%240000<30000;
+ wren.style.display=wrenVisit?'':'none';
+ if(wrenVisit){
   const perches=[[328,138],[312,112],[276,155]];
-  const age=Math.max(0,now-rainStopped);
+  const age=now%240000;
   const leg=Math.floor(age/10000);
   const phase=age%10000;
   const from=perches[leg%perches.length],to=perches[(leg+1)%perches.length];
@@ -235,7 +236,7 @@ function draw(now){
  const visiting=svg.dataset.day==='false'&&!wet;
  owlVisitStart=visiting?(owlVisitStart??now):null;
  const phase=(now-(owlVisitStart??now))%(branchMs+roofMs+2*flightMs);
- const target=visiting?(phase<branchMs+flightMs?branch:roof):offstage;
+ const target=visiting?branch:offstage;
  if(target!==owlTarget){
   owlOrigin=owlPosition;
   owlTarget=target;

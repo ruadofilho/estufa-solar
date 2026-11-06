@@ -33,7 +33,7 @@ function forecast(b,c,obs=[],now=Date.now(),environment={}){
  const geo=D.geometry(b,parameters),common={cap,history,current:history.mc,water:Math.max(0,geo.dryMass*(history.mc-Number(b.target))/100),energy:Math.max(0,geo.dryMass*(history.mc-Number(b.target))/100)*M.C.latent,initial:!measurement,fresh:!!freshWood,progress:Math.max(0,Math.min(100,(Number(b.initial)-history.mc)/(Number(b.initial)-Number(b.target))*100))};
  const start=Date.parse(b.start+'-03:00'),last=history.air.at(-1);
  const justMeasured=freshWood&&now-measurement.epoch<=5*60000&&last&&last.epoch<=measurement.epoch;
- if(now-start>15*60000&&history.coverage<.9&&!justMeasured)return {...common,status:'history',message:'Histórico cobre '+Math.round(history.coverage*100)+'% desde a referência. Prazo suspenso nas lacunas.'};
+ if(now-start>15*60000&&history.coverage<.3&&!justMeasured)return {...common,status:'history',message:'Histórico cobre '+(history.coverage*100).toFixed(1)+'% desde a referência. Dados insuficientes para estimar; a previsão retorna com novas leituras.'};
  if(now-start>15*60000&&(!last||now-last.epoch>5*60000))return {...common,status:'stale',message:'Sem leitura recente do ar. Estimativa parada na última amostra.'};
  if(history.mc<=Number(b.target))return {...common,status:'estimatedTarget',message:'Meta estimada pelo modelo; confirmar na madeira.'};
  // O relógio é ancorado nos dados, não reduz horas com o mero passar do calendário.
