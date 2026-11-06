@@ -83,7 +83,7 @@ function drawTimer(b,r){
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Este lote foi encerrado por você.';return;}
  if(r.status==='forecast'){
  main.textContent=new Date(r.earliest).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric'});
- sub.textContent=r.history?.estimatedHours>0?'Previsão aproximada · lacunas do histórico preenchidas por estimativa.':'';
+ sub.textContent='';
  }else if(r.status==='target'){main.textContent='Amostra na meta';sub.textContent=r.message;}
  else if(r.status==='estimatedTarget'){main.textContent='Conferir a madeira';sub.textContent=r.message;}
  else if(r.status==='capacity'){main.textContent='Revisar carga';sub.textContent=r.message;}
@@ -144,11 +144,13 @@ function render(){
  $$('calc-inputs').textContent='';
  $('calc-basis').textContent='';
  $('calc-air').textContent='';
+ if(!cloudReady||!b){window.FabricaSceneWood={ready:false};window.dispatchEvent(new CustomEvent('scene-wood',{detail:window.FabricaSceneWood}));}
  if(!cloudReady){$$('time-main').textContent='--';$$('time-caption').textContent='Aguardando o lote compartilhado.';$$('time-meta').textContent='Os dados deste aparelho estão preservados.';$$('load-summary').textContent='';return;}
  if(!b){drawTimer(null,null);$$('load-summary').textContent='Cadastre seu lote na aba Lote.';$$('batch-check').textContent='';$$('climate-note').textContent='O clima será escolhido automaticamente pelo local.';return;}
  const c=climateFor(b),r=P.forecast(b,c,state.observations,cloud.serverNow()??Date.now(),processData);modelResult=r;renderProcess(r);
  drawTimer(b,r);
  const ref=r.history?.wood;
+ const woodState={ready:!!ref&&Number.isFinite(ref.mc)&&ref.mc<=Number(b.target)};window.FabricaSceneWood=woodState;window.dispatchEvent(new CustomEvent('scene-wood',{detail:woodState}));
  const inside=t?.airValid?n(t.airT)+' °C / '+n(t.airRH)+'% UR':'sem leitura recente';
  const outside=t?.externalValid?n(t.externalT)+' °C / '+n(t.externalRH)+'% UR':'sem leitura recente';
  $('calc-air').textContent='Ar agora · Dentro: '+inside+' · Fora: '+outside+'.';

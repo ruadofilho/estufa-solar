@@ -5,13 +5,14 @@
 })(globalThis,function(){
  'use strict';
  const CONFIG={minInterval:120000,maxInterval:300000,hover:60000,transition:2400,storyDuration:16000,dayVisitChance:.08};
- const STORIES=['sono','inseto','pena','limpeza','objeto','madeira','ruido','ninho','pirata','marceneira','jardineira'];
+ const STORIES=['sono','inseto','pena','limpeza','objeto','madeira','ruido','ninho','pirata','marceneira','jardineira','oficina'];
  class Director{
-  constructor(memory={},random=Math.random){this.random=random;this.memory={recent:[],nest:0,starts:0,...memory};this.state='absent';this.time=0;this.since=0;this.night=null;this.coolers=null;this.hot=false;this.next=0;this.story=null;this.hatchUntil=0;}
+  constructor(memory={},random=Math.random){this.random=random;this.memory={recent:[],nest:0,starts:0,project:0,buildStage:0,...memory};this.state='absent';this.time=0;this.since=0;this.night=null;this.coolers=null;this.hot=false;this.next=0;this.story=null;this.hatchUntil=0;}
   enter(state){this.state=state;this.since=this.time;this.story=null;}
   wait(){this.next=this.time+CONFIG.minInterval+this.random()*(CONFIG.maxInterval-CONFIG.minInterval);}
   play(id){if(!STORIES.includes(id))return;this.enter('story');this.story=id;}
-  sensors({coolers,temperature,valid,hatch,rain}={}){
+  sensors({coolers,temperature,valid,hatch,rain,woodReady}={}){
+   if(typeof woodReady==='boolean')this.woodReady=woodReady;
    if(typeof rain==='boolean'&&rain!==this.rain){this.rain=rain;if(rain&&this.night&&['idle','story'].includes(this.state))this.enter('shelter');else if(!rain&&this.state==='shelter'){this.enter(this.rain?'shelter':'idle');this.wait();}}
    if(valid&&Number.isFinite(temperature))this.hot=this.hot?temperature>48:temperature>50;
    if(hatch!==undefined&&hatch!==this.hatch){this.hatch=hatch;this.hatchUntil=this.time+2600;}
@@ -41,12 +42,13 @@
    if(this.state==='dayVisit'&&age>=9000)this.enter('absent');
    if(this.state==='story'&&age>=CONFIG.storyDuration){
     this.memory.recent=[this.story,...this.memory.recent].slice(0,3);
+    if(this.story==='oficina'&&this.woodReady){this.memory.buildStage++;if(this.memory.buildStage>=3){this.memory.buildStage=0;this.memory.project=(this.memory.project+1)%6;}}
     if(this.story==='ninho')this.memory.nest=Math.min(3,this.memory.nest+1);
     this.enter('idle');this.wait();
    }
    if(this.state==='idle'&&this.time>=this.next&&night){
     const choices=STORIES.filter(id=>!this.memory.recent.includes(id));
-    const weights=choices.map(id=>id==='ninho'&&this.memory.nest<3?2:1);
+    const weights=choices.map(id=>id==='oficina'?7:id==='madeira'?3:id==='ninho'&&this.memory.nest<3?2:1);
     let pick=this.random()*weights.reduce((a,b)=>a+b,0),index=0;
     while(index<weights.length-1&&pick>=weights[index])pick-=weights[index++];
     this.play(choices[index]);
@@ -74,6 +76,28 @@
   make('path',{d:'M-3-2h2v2h2v-2h2v3H-3z',fill:'#e2f4b6'},insect);
   const feather=make('path',{d:'M0 0l-4-8 2-4 4 5z',fill:'#edcfbe'},props);
   const shine=make('path',{d:'M0-4v8m-4-4h8',stroke:'#fff4b8'},props);
+  const workshop=make('g',{'aria-hidden':'true'},svg);
+  const bench=make('path',{d:'M213 189h48v5h-48zM217 194v12m40-12v12',fill:'#b58150',stroke:'#624a35','stroke-width':2},workshop);
+  const blueprint=make('path',{d:'M216 184h28v5h-28zM220 185h18',fill:'#d6e4d5',stroke:'#7e9c9c'},workshop);
+  const build=make('g',{},workshop);
+  const chips=make('path',{d:'M0 0h2m4-3h2m-9-3h2',stroke:'#e1ba7b','stroke-width':1},workshop);
+  const hammer=make('g',{},pose);
+  hammer.innerHTML='<path d="M12-5l4-10" stroke="#bf9057" stroke-width="2"/><path d="M12-17l9 3-1 4-9-3z" fill="#9caaa8" stroke="#495655" stroke-width="1"/>';
+  const projects=[
+   ['casinha','M-14 0v-21h28V0Z','M-18-21L0-36 18-21Z','M-5 0v-14h10V0M-11-18h5v5h-5m17-5h5v5h-5'],
+   ['mesa','M-15-14h30v4h-30Z','M-12-10V0m24-10V0','M-10-13H10'],
+   ['guarda-roupa','M-13 0v-33h26V0Z','M-15-34h30v3h-30Z','M0-30V-2m-4-15h1m6 0h1'],
+   ['pianinho','M-14 0v-23h28V0Z','M-16-15h32v5h-32Z','M-12-14h24m-22 0v3m4-3v3m4-3v3m4-3v3m4-3v3M-10-20h20'],
+   ['cadeira','M-10-14h20v4h-20Z','M-10-14v-18h20v18','M-8-10V0m16-10V0M-8-28H8m-16 6H8'],
+   ['porta','M-12 0v-34h24V0Z','M-15 0v-37h30V0','M-8-29H8v11H-8Zm0 15H8v10H-8Zm13-3h2']
+  ];
+  function drawProject(stage,index){
+   const project=projects[index%projects.length];
+   build.innerHTML='<path d="'+project[1]+'" fill="#b38352" stroke="#62452f" stroke-width="1.5"/>'+
+    (stage>=1?'<path d="'+project[2]+'" fill="#84583c" stroke="#4e392b" stroke-width="1.5"/>':'')+
+    (stage>=2?'<path d="'+project[3]+'" fill="#e1be83" stroke="#68492f" stroke-width="1.2"/>':'');
+   build.setAttribute('transform','translate(239 184) scale(.7)');
+  }
   const costume=make('g',{},pose);
   const umbrella=make('g',{},pose);
   umbrella.innerHTML='<path d="M12-38V-5q0 5-4 2" fill="none" stroke="#dbb77a" stroke-width="1.5"/><path d="M-7-32Q12-54 31-32Q25-36 19-32Q12-37 6-32Q0-36-7-32Z" fill="#b56949" stroke="#5c4033"/><path d="M12-44Q6-39 6-32M12-44Q19-39 19-32" fill="none" stroke="#e5b36d"/>';
@@ -86,10 +110,14 @@
   let last=0,frame=0,saved='',demo=null,position=[-25,80];
   const persist=()=>{if(demo)return;const value=JSON.stringify(director.memory);if(value!==saved){try{localStorage.setItem('estufa-owl-v1',value);saved=value;}catch{}}};
   function telemetry(t){if(demo)return;director.sensors({coolers:t?.status==='online'&&typeof t.coolers==='boolean'?t.coolers:undefined,temperature:t?.airT,valid:t?.airValid===true});}
+  window.addEventListener('scene-wood',e=>{if(!demo)director.sensors({woodReady:e.detail?.ready===true});});
+  director.sensors({woodReady:window.FabricaSceneWood?.ready===true});
   window.addEventListener('scene-telemetry',e=>telemetry(e.detail));
   window.addEventListener('hatch-state',e=>{if(!demo)director.sensors({hatch:e.detail?.position});});
   telemetry(window.FabricaSceneTelemetry);
   function render(dt){
+   hammer.style.display='none';chips.style.display='none';
+   drawProject(director.memory.buildStage,director.memory.project);
    const night=demo?demo.night:svg.dataset.day==='false';
    director.sensors({rain:demo?demo.rain===true:svg.dataset.weather==='rain'});
    if(night&&director.time>witchNext&&witchStart===null)witchStart=director.time;
@@ -123,6 +151,22 @@
    if(v.state==='idle'){closed=Math.floor(t/8)%3===1;headAngle=closed?4:7*Math.sin(t*.6);if(t%17>14)angle=4*Math.sin(t*5);}
    if(v.state==='story'){
     const id=v.story;
+    if(id==='oficina'){
+     const smooth=f=>{f=Math.max(0,Math.min(1,f));return f*f*(3-2*f);};
+     // Inspect, decide, carry a plank, hammer, admire, return.
+     let f=0;
+     if(p<.22){f=smooth(p/.22);x=107+28*f;y=80+73*f;fly=p<.18;headAngle=22*f;}
+     else if(p<.34){x=135;y=153;headAngle=15*Math.sin(t*3);object.style.display='';object.setAttribute('transform','translate(146 155) rotate(-25)');}
+     else if(!director.woodReady){f=smooth((p-.34)/.66);x=135-28*f;y=153-73*f;fly=true;headAngle=-12*Math.sin(p*Math.PI);}
+     else if(p<.5){f=smooth((p-.34)/.16);x=135+79*f;y=153+34*f;fly=true;object.style.display='';object.setAttribute('transform','translate('+(x+12)+' '+(y-5)+') rotate(-20) scale(3 1)');}
+     else if(p<.82){x=214;y=187;headAngle=14;angle=2*Math.sin(t*8);
+      hammer.style.display='';hammer.setAttribute('transform','rotate('+(-25+45*Math.sin(t*10))+' 10 -4)');
+      chips.style.display=Math.sin(t*10)>.6?'':'none';chips.setAttribute('transform','translate(230 180)');
+      drawProject(Math.min(2,director.memory.buildStage+(p>.7?1:0)),director.memory.project);
+      costume.style.display='';costume.innerHTML='<path d="M-7-13H7V0H-7Z" fill="#58777b"/><path d="M-4-10h8v5h-8Z" fill="#c2a175"/>';
+     }else if(p<.9){x=214;y=187;headAngle=-12;shine.style.display='';shine.setAttribute('transform','translate(254 162)');}
+     else {f=smooth((p-.9)/.1);x=214-107*f;y=187-107*f;fly=true;}
+    }
     if(['pirata','marceneira','jardineira'].includes(id)){
      costume.style.display=p>.12&&p<.92?'':'none';
      const phase=Math.max(0,Math.min(1,(p-.25)/.5));
@@ -180,6 +224,7 @@
    const controls=document.createElement('details');controls.innerHTML='<summary>Demonstração da coruja</summary>';
    const button=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.type='button';b.onclick=fn;controls.append(b);};
    STORIES.forEach(id=>button(id,()=>{director.night=true;demo.night=true;director.play(id);}));
+   button('Madeira pronta (simulação)',()=>director.sensors({woodReady:true}));button('Madeira ainda úmida',()=>director.sensors({woodReady:false}));
    button('Chuva',()=>{demo.rain=!demo.rain;});button('Bruxinha',()=>{witchNext=director.time;});
    button('Noite',()=>demo.night=true);button('Amanhecer',()=>demo.night=false);
    button('Coolers ligar',()=>{director.sensors({coolers:false});director.sensors({coolers:true});});
