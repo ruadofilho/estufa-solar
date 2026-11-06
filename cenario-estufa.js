@@ -204,6 +204,9 @@ owl.innerHTML='<path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-
 const pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
 const wings=node('path',{d:'M-10-13l-16-8v7l16 9zm20 0l16-8v7l-16 9z',fill:'#ab82a9'},owl);
 wind.removeAttribute('clip-path');
+// The moving wisps show the direction, so hide the old fixed arrows.
+svg.querySelector('path[d^="M91 108"]')?.setAttribute('visibility','hidden');
+const airMotion=matchMedia('(prefers-reduced-motion: reduce)');
 const routes=[
  'M91 108H111Q120 108 129 116L173 138Q182 142 182 155H119Q114 155 114 181H93',
  'M129 103L132 113Q135 120 145 123L173 139Q182 143 182 169H119Q114 169 114 181H93',
@@ -211,7 +214,7 @@ const routes=[
 ].map(d=>{const p=node('path',{d,fill:'none',stroke:'none'},wind);return {p,len:p.getTotalLength()};});
 const gusts=Array.from({length:7},(_,i)=>{
  const g=node('g',{class:'air-gust',fill:'none',stroke:i%2?'#26758a':'#3d879a','stroke-width':1.6,'stroke-linecap':'round'},wind);
- node('path',{d:'M-7 0H3M0-3l3 3-3 3'},g);
+ node('path',{d:'M-7-2h9q4 0 4-3q0-2-2-2M-9 1h12M-5 4h7q3 0 3 2'},g);
  return g;
 });
 let frame=0,last=-Infinity;
@@ -270,8 +273,16 @@ function draw(now){
  gusts.forEach((g,i)=>{
   g.style.display=wind.classList.contains('coolers-active')&&(i%3===1||svg.dataset.hatches==='ABRIR')?'':'none';
   const {p,len}=routes[i%routes.length];
-  const phase=matchMedia("(prefers-reduced-motion: reduce)").matches?(i+1)/8:(now/1000*.12+(i+1)/7)%1,at=phase*len;
+  const phase=airMotion.matches?(i+1)/8:(now/1000*.12+(i+1)/7)%1,at=phase*len;
   const a=p.getPointAtLength(at),b=p.getPointAtLength(Math.min(len,at+.9)),angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+  // Illustrative heating along the roof, then a softer warm tone through the wood.
+  // These colours describe the airflow; they are not temperature measurements.
+  const mix=(from,to,t)=>'rgb('+from.map((v,j)=>Math.round(v+(to[j]-v)*t)).join(',')+')';
+  const roofHeat=Math.max(0,Math.min(1,(phase-.10)/.30));
+  const throughWood=Math.max(0,Math.min(1,(phase-.50)/.42));
+  const hot=[224,111,49],out=[195,137,83];
+  const color=phase<.50?mix([50,151,190],hot,roofHeat):mix(hot,out,throughWood);
+  g.setAttribute('stroke',color);
   g.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+angle+')');
   g.setAttribute('opacity',(.56+.36*Math.sin(phase*2*Math.PI+i)).toFixed(2));
  });
