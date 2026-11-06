@@ -46,17 +46,6 @@ frog.innerHTML=
  '<path fill="#263e35" d="M-4-8h2v2h-2zm8 0h2v2H4zM-3-3h6v1h-6z"/>'+
  '<path class="frog-feet" fill="#699149" d="M-12 2h8v3h-8zm16 0h8v3H4z"/>';
 svg.insertBefore(frog,clock);
-const wren=node('g',{id:'scene-wren',role:'img','aria-label':'Corruíra passeando pelos galhos'});
-wren.innerHTML=
- '<path fill="#664734" d="M-7-8l-7-9v-4l5 3 7 9z"/>'+
- '<path fill="#a77a50" d="M-7-10h12v-5h7v3h3v8h-4v4H-4v-3h-4z"/>'+
- '<path fill="#ddbd86" d="M-4-5h12v5H-2z"/>'+
- '<path fill="#775338" d="M-7-8H3v4H-5z"/>'+
- '<path fill="#f2ddb1" d="M6-12h6v1H6z"/>'+
- '<path fill="#26362d" d="M10-11h2v2h-2z"/>'+
- '<path fill="#c8a46c" d="M15-10h4l-4 3z"/>'+
- '<path stroke="#70513c" stroke-width="1.5" d="M-1 0v3m5-3v3"/>';
-svg.insertBefore(wren,clock);
 // Rain falls in front of the garden and equipment, behind the clock.
 svg.insertBefore(precipitation,clock);
 let rainStarted=null,rainStopped=null,previousRain=false;
@@ -86,20 +75,7 @@ function drawRainVisitors(now){
   frog.setAttribute('transform','translate('+x+' '+y+') scale('+direction*(1+.12*arc)+' '+(1-.1*arc)+')');
   frog.setAttribute('aria-label',hopping?'Sapinho pulando pelo jardim e pelas poças':'Sapinho descansando entre os pulos');
  }
- wren.style.display=!raining&&rainStopped!==null?'':'none';
- if(!raining&&rainStopped!==null){
-  const perches=[[328,138],[312,112],[276,155]];
-  const age=Math.max(0,now-rainStopped);
-  const leg=Math.floor(age/10000);
-  const phase=age%10000;
-  const from=perches[leg%perches.length],to=perches[(leg+1)%perches.length];
-  const hopping=phase>=8500;
-  const fraction=hopping?(phase-8500)/1500:0;
-  const x=from[0]+(to[0]-from[0])*fraction;
-  const y=from[1]+(to[1]-from[1])*fraction-12*Math.sin(Math.PI*fraction);
-  const direction=to[0]>=from[0]?1:-1;
-  wren.setAttribute('transform','translate('+x+' '+y+') scale('+direction+' 1)');
- }
+
 }
 const seasons={
  'Primavera':{leaves:['#548764','#81a762'],marks:'#efa8bb',ground:'#8ab774',kind:'flower'},
@@ -213,9 +189,6 @@ const gusts=Array.from({length:7},(_,i)=>{
  return g;
 });
 let frame=0,last=-Infinity;
-const offstage=[-30,44],branch=[276,155],roof=[107,80];
-const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
-let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 function draw(now){
  drawGarden(now);
  updateDaylight(now);
@@ -232,33 +205,6 @@ function draw(now){
   wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
  }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
- const visiting=svg.dataset.day==='false'&&!wet;
- owlVisitStart=visiting?(owlVisitStart??now):null;
- const phase=(now-(owlVisitStart??now))%(branchMs+roofMs+2*flightMs);
- const target=visiting?(phase<branchMs+flightMs?branch:roof):offstage;
- if(target!==owlTarget){
-  owlOrigin=owlPosition;
-  owlTarget=target;
-  owlFlightStart=now;
- }
- const progress=Math.min(1,Math.max(0,(now-owlFlightStart)/flightMs));
- const flying=owlOrigin!==owlTarget&&progress<1;
- owlPosition=flying?[
-  owlOrigin[0]+(owlTarget[0]-owlOrigin[0])*progress,
-  owlOrigin[1]+(owlTarget[1]-owlOrigin[1])*progress-38*Math.sin(Math.PI*progress)
- ]:owlTarget;
- const [x,y]=owlPosition;
- owl.style.display=flying||target!==offstage?'':'none';
- owl.setAttribute('transform','translate('+x+' '+y+')');
- wings.style.display=flying?'':'none';
- wings.setAttribute('transform','scale(1 '+(.7+.45*Math.sin(now/37))+')');
- const label=flying
-  ?(target===offstage?'Coruja voando para longe':'Coruja chegando ao '+(target===branch?'galho':'telhado'))
-  :(target===branch?'Coruja pousada no galho':'Coruja pousada no telhado');
- if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
- const shut=!flying&&now%6700<170;
- pupils.setAttribute("opacity",shut?"0":"1");
- blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
   g.style.display=wet||svg.dataset.day!=='false'?'none':'';
   const u=now/1000,x0=[35,68,230,256,324,367][i];
@@ -299,6 +245,8 @@ async function refreshWeather(){
    const snow=(code>=71&&code<=77)||code===85||code===86;
    const condition=code===0?"clear":code===1||code===2?"partly":code===3?"cloudy":code===45||code===48?"fog":snow?"snow":"rain";
    svg.dataset.weather=condition;
+   svg.dataset.storm=String(code===65||code===82||code>=95);
+   svg.dataset.weatherCode=String(code);
    svg.dataset.day=current.is_day===1?"true":"false";
    if(snow)weather="Neve";
   }
