@@ -206,7 +206,7 @@ const wings=node('path',{d:'M-10-13l-16-8v7l16 9zm20 0l16-8v7l-16 9z',fill:'#ab8
 wind.removeAttribute('clip-path');
 // The moving wisps show the direction, so hide the old fixed arrows.
 svg.querySelector('path[d^="M91 108"]')?.removeAttribute('visibility');
-const airMotion=matchMedia('(prefers-reduced-motion: reduce)');
+
 const routes=[
  'M91 108H111Q120 108 129 116L173 138Q182 142 182 155H119Q114 155 114 181H93',
  'M129 103L132 113Q135 120 145 123L173 139Q182 143 182 169H119Q114 169 114 181H93',
@@ -273,25 +273,20 @@ function draw(now){
  gusts.forEach((g,i)=>{
   g.style.display=wind.classList.contains('coolers-active')&&(i%3===1||svg.dataset.hatches==='ABRIR')?'':'none';
   const {p,len}=routes[i%routes.length];
-  const phase=airMotion.matches?(i+1)/8:(now/1000*.12+(i+1)/7)%1,at=phase*len;
+  const phase=(now/1000*.12+(i+1)/7)%1,at=phase*len;
   const a=p.getPointAtLength(at),b=p.getPointAtLength(Math.min(len,at+.9)),angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
-  // Illustrative heating along the roof, then a softer warm tone through the wood.
-  // These colours describe the airflow; they are not temperature measurements.
-  const mix=(from,to,t)=>'rgb('+from.map((v,j)=>Math.round(v+(to[j]-v)*t)).join(',')+')';
-  const roofHeat=Math.max(0,Math.min(1,(phase-.10)/.30));
-  const throughWood=Math.max(0,Math.min(1,(phase-.50)/.42));
-  const hot=[224,111,49],out=[195,137,83];
-  const color=phase<.50?mix([50,151,190],hot,roofHeat):mix(hot,out,throughWood);
-  g.setAttribute('stroke',i%2?'#26758a':'#3d879a');
   g.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+angle+')');
   g.setAttribute('opacity',(.56+.36*Math.sin(phase*2*Math.PI+i)).toFixed(2));
  });
 }
-function tick(time){frame=0;if(document.hidden)return;if(time-last>=32){last=time;draw(Date.now());}frame=requestAnimationFrame(tick);}
+function tick(time){frame=0;if(document.hidden)return;try{if(time-last>=32){last=time;draw(Date.now());}}finally{frame=requestAnimationFrame(tick);}}
 function sync(){if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0;return;}draw(Date.now());if(!frame)frame=requestAnimationFrame(tick);}
 document.addEventListener('visibilitychange',sync);
-window.addEventListener('pageshow',sync);
+window.addEventListener('pageshow',()=>{last=-Infinity;sync();});
 window.addEventListener('focus',sync);
+// Resume after mobile browsers suspend animation frames while backgrounded.
+let previousFrameTime=0;
+setInterval(()=>{if(!document.hidden&&last===previousFrameTime){if(frame)cancelAnimationFrame(frame);frame=0;last=-Infinity;sync();}previousFrameTime=last;},1000);
 sync();
 
 async function refreshWeather(){
