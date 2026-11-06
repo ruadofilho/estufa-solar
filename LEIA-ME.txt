@@ -1,0 +1,31 @@
+CORUJA — HISTÓRIAS DA ESTUFA
+
+Envie os três arquivos desta pasta à raiz do repositório, substituindo os existentes.
+Nenhum controle, cálculo ou comando da estufa é modificado.
+
+Ajustes em owl-life.js, constante CONFIG no início:
+minInterval e maxInterval: intervalo entre histórias (120000 a 300000 ms).
+hover: voo após a primeira partida dos coolers (60000 ms).
+storyDuration: duração de cada história (16000 ms).
+dayVisitChance: chance de visita a cada intervalo durante o dia (0.08).
+transition: chegada e retorno (2400 ms).
+
+Demonstração: acrescente ?owlDemo=1 ao endereço do painel.
+Os botões aparecem abaixo do desenho e permitem escolher cada história,
+amanhecer, noite, calor, escotilhas e coolers. Não alteram sensores nem comandos.
+Retire o parâmetro para voltar ao modo normal. A demonstração não salva memória.
+
+A memória local estufa-owl-v1 guarda somente últimas histórias, progresso do
+ninho e número de partidas dos coolers observadas. Recarregar começa uma cena nova.
+As animações param com a aba oculta. Movimento reduzido mantém a coruja estática.
+
+Histórias: sono e desequilíbrio; inseto no bico; pena no penteado; limpeza;
+objeto perdido e recuperado; observação da madeira; investigação de ruído;
+construção e teste do ninho.
+
+Verificação: teste automatizado da máquina de estados cobre as oito histórias,
+memória, interrupção pelos coolers, minuto de voo, desligamento antecipado,
+mudança dia/noite e histerese térmica de 50/48 °C.
+Sintaxe dos módulos verificada. Aparência e coreografia ainda precisam de revisão
+visual no navegador. Arquivos originais de Johnny Castaway não foram executados
+nem reutilizados; só a estrutura e o readme foram examinados.
