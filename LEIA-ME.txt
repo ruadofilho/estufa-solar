@@ -29,3 +29,5 @@ mudança dia/noite e histerese térmica de 50/48 °C.
 Sintaxe dos módulos verificada. Aparência e coreografia ainda precisam de revisão
 visual no navegador. Arquivos originais de Johnny Castaway não foram executados
 nem reutilizados; só a estrutura e o readme foram examinados.
+
+Atualização: coruja marrom detalhada, três figurinos com ações, guarda-chuva enquanto houver chuva real e bruxa distante à noite. Agora são 11 histórias. Dados externos restaurados abaixo do desenho. Na demonstração, Chuva e Bruxinha permitem conferir as novas cenas. Recursos e código de Johnny Castaway não foram reutilizados: os arquivos fornecidos são binários antigos, sem script-fonte acessível.
