@@ -242,6 +242,9 @@ const gusts=Array.from({length:7},(_,i)=>{
  return g;
 });
 let frame=0,last=-Infinity;
+const offstage=[-30,44],branch=[276,155],roof=[107,80];
+const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
+let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 function draw(now){
  drawGarden(now);
  updateDaylight(now);
@@ -258,6 +261,33 @@ function draw(now){
   wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
  }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
+ const visiting=svg.dataset.day==='false'&&!wet;
+ owlVisitStart=visiting?(owlVisitStart??now):null;
+ const phase=(now-(owlVisitStart??now))%(branchMs+roofMs+2*flightMs);
+ const target=visiting?branch:offstage;
+ if(target!==owlTarget){
+  owlOrigin=owlPosition;
+  owlTarget=target;
+  owlFlightStart=now;
+ }
+ const progress=Math.min(1,Math.max(0,(now-owlFlightStart)/flightMs));
+ const flying=owlOrigin!==owlTarget&&progress<1;
+ owlPosition=flying?[
+  owlOrigin[0]+(owlTarget[0]-owlOrigin[0])*progress,
+  owlOrigin[1]+(owlTarget[1]-owlOrigin[1])*progress-38*Math.sin(Math.PI*progress)
+ ]:owlTarget;
+ const [x,y]=owlPosition;
+ owl.style.display=flying||target!==offstage?'':'none';
+ owl.setAttribute('transform','translate('+x+' '+y+')');
+ wings.style.display=flying?'':'none';
+ wings.setAttribute('transform','scale(1 '+(.7+.45*Math.sin(now/37))+')');
+ const label=flying
+  ?(target===offstage?'Coruja voando para longe':'Coruja chegando ao '+(target===branch?'galho':'telhado'))
+  :(target===branch?'Coruja pousada no galho':'Coruja pousada no telhado');
+ if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
+ const shut=!flying&&now%6700<170;
+ pupils.setAttribute("opacity",shut?"0":"1");
+ blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
   g.style.display=wet||svg.dataset.day!=='false'?'none':'';
   const u=now/1000,x0=[35,68,230,256,324,367][i];
