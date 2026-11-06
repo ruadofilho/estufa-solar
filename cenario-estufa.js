@@ -59,9 +59,6 @@ wren.innerHTML=
 svg.insertBefore(wren,clock);
 // Rain falls in front of the garden and equipment, behind the clock.
 svg.insertBefore(precipitation,clock);
-const splash=node('g',{'aria-hidden':'true'});
-svg.insertBefore(splash,frog);
-const spray=Array.from({length:12},()=>node('rect',{width:2,height:2,fill:'#d5f5ff'},splash));
 let rainStarted=null,rainStopped=null,previousRain=false;
 function drawRainVisitors(now){
  const raining=svg.dataset.weather==='rain';
@@ -73,7 +70,6 @@ function drawRainVisitors(now){
  puddles.style.display=water>0?'':'none';
  puddles.setAttribute('opacity',water.toFixed(2));
  frog.style.display=raining?'':'none';
- if(!raining)splash.style.display='none';
  if(raining){
   const stops=[[247,206,2400],[300,204,900],[359,210,2200],[300,204,800],[247,206,1800],[190,205,700],[130,205,900],[62,207,2300],[120,205,800],[185,205,700]];
   const hopMs=720;
@@ -87,26 +83,13 @@ function drawRainVisitors(now){
   const direction=to[0]>=from[0]?1:-1;
   const x=from[0]+(to[0]-from[0])*fraction;
   const y=from[1]+(to[1]-from[1])*fraction-26*arc;
-  const landed=stops[leg];
-  const inPuddle=[62,247,359].includes(landed[0]);
-  const splashAge=phase/650;
-  splash.style.display=inPuddle&&splashAge<1?'':'none';
-  spray.forEach((drop,i)=>{
-   const angle=Math.PI*(.08+.84*i/11);
-   const dx=Math.cos(angle)*38*splashAge;
-   const dy=-Math.sin(angle)*30*splashAge+25*splashAge*splashAge;
-   drop.setAttribute('x',landed[0]+dx);
-   drop.setAttribute('y',landed[1]+3+dy);
-   drop.setAttribute('opacity',1-splashAge);
-  });
   frog.setAttribute('transform','translate('+x+' '+y+') scale('+direction*(1+.12*arc)+' '+(1-.1*arc)+')');
   frog.setAttribute('aria-label',hopping?'Sapinho pulando pelo jardim e pelas poças':'Sapinho descansando entre os pulos');
  }
- const wrenVisit=svg.dataset.day==='true'&&!raining&&now%240000<30000;
- wren.style.display=wrenVisit?'':'none';
- if(wrenVisit){
+ wren.style.display=!raining&&rainStopped!==null?'':'none';
+ if(!raining&&rainStopped!==null){
   const perches=[[328,138],[312,112],[276,155]];
-  const age=now%240000;
+  const age=Math.max(0,now-rainStopped);
   const leg=Math.floor(age/10000);
   const phase=age%10000;
   const from=perches[leg%perches.length],to=perches[(leg+1)%perches.length];
@@ -174,18 +157,6 @@ function caption(){
  document.getElementById('sky-caption').textContent='Sorocaba · '+captionDate+' · '+conditions;
 }
 function drawGarden(now){
- // Calendar time keeps the three-day ripening cycle consistent after reloads.
- const ripeness=((now-Date.UTC(2026,0,1))%(3*86400000))/(3*86400000);
- const fruitSeason=seasonAt(Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',month:'2-digit',day:'2-digit'}).format(new Date(now)).replace('/','')));
- const ripe=fruitSeason==='Outono'?[236,180,73]:fruitSeason==='Inverno'?[190,184,104]:fruitSeason==='Primavera'?[218,211,88]:[247,215,83];
- garden.querySelectorAll('.guava-fruit').forEach((fruit,i)=>{
-  const f=(ripeness+i*.07)%1;
-  const color=blendColor([91,151,68],ripe,f);
-  fruit.querySelector('path').setAttribute('fill',color);
-  fruit.querySelectorAll('path')[1].setAttribute('fill',blendColor([139,183,89],[255,232,137],f));
-  fruit.setAttribute('aria-label','Goiaba amadurecendo · '+Math.round(f*100)+'%');
- });
-
  const p=Object.fromEntries(dateFormat.formatToParts(new Date(now)).map(x=>[x.type,x.value]));
  const date=p.day+'/'+p.month;
  if(date!==captionDate){captionDate=date;caption();}
@@ -242,6 +213,9 @@ const gusts=Array.from({length:7},(_,i)=>{
  return g;
 });
 let frame=0,last=-Infinity;
+const offstage=[-30,44],branch=[276,155],roof=[107,80];
+const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
+let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 function draw(now){
  drawGarden(now);
  updateDaylight(now);
@@ -258,6 +232,33 @@ function draw(now){
   wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
  }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
+ const visiting=svg.dataset.day==='false'&&!wet;
+ owlVisitStart=visiting?(owlVisitStart??now):null;
+ const phase=(now-(owlVisitStart??now))%(branchMs+roofMs+2*flightMs);
+ const target=visiting?(phase<branchMs+flightMs?branch:roof):offstage;
+ if(target!==owlTarget){
+  owlOrigin=owlPosition;
+  owlTarget=target;
+  owlFlightStart=now;
+ }
+ const progress=Math.min(1,Math.max(0,(now-owlFlightStart)/flightMs));
+ const flying=owlOrigin!==owlTarget&&progress<1;
+ owlPosition=flying?[
+  owlOrigin[0]+(owlTarget[0]-owlOrigin[0])*progress,
+  owlOrigin[1]+(owlTarget[1]-owlOrigin[1])*progress-38*Math.sin(Math.PI*progress)
+ ]:owlTarget;
+ const [x,y]=owlPosition;
+ owl.style.display=flying||target!==offstage?'':'none';
+ owl.setAttribute('transform','translate('+x+' '+y+')');
+ wings.style.display=flying?'':'none';
+ wings.setAttribute('transform','scale(1 '+(.7+.45*Math.sin(now/37))+')');
+ const label=flying
+  ?(target===offstage?'Coruja voando para longe':'Coruja chegando ao '+(target===branch?'galho':'telhado'))
+  :(target===branch?'Coruja pousada no galho':'Coruja pousada no telhado');
+ if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
+ const shut=!flying&&now%6700<170;
+ pupils.setAttribute("opacity",shut?"0":"1");
+ blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
   g.style.display=wet||svg.dataset.day!=='false'?'none':'';
   const u=now/1000,x0=[35,68,230,256,324,367][i];
