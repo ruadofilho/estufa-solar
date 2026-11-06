@@ -59,6 +59,9 @@ wren.innerHTML=
 svg.insertBefore(wren,clock);
 // Rain falls in front of the garden and equipment, behind the clock.
 svg.insertBefore(precipitation,clock);
+const splash=node('g',{'aria-hidden':'true'});
+svg.insertBefore(splash,frog);
+const spray=Array.from({length:12},()=>node('rect',{width:2,height:2,fill:'#d5f5ff'},splash));
 let rainStarted=null,rainStopped=null,previousRain=false;
 function drawRainVisitors(now){
  const raining=svg.dataset.weather==='rain';
@@ -70,6 +73,7 @@ function drawRainVisitors(now){
  puddles.style.display=water>0?'':'none';
  puddles.setAttribute('opacity',water.toFixed(2));
  frog.style.display=raining?'':'none';
+ if(!raining)splash.style.display='none';
  if(raining){
   const stops=[[247,206,2400],[300,204,900],[359,210,2200],[300,204,800],[247,206,1800],[190,205,700],[130,205,900],[62,207,2300],[120,205,800],[185,205,700]];
   const hopMs=720;
@@ -83,6 +87,18 @@ function drawRainVisitors(now){
   const direction=to[0]>=from[0]?1:-1;
   const x=from[0]+(to[0]-from[0])*fraction;
   const y=from[1]+(to[1]-from[1])*fraction-26*arc;
+  const landed=stops[leg];
+  const inPuddle=[62,247,359].includes(landed[0]);
+  const splashAge=phase/650;
+  splash.style.display=inPuddle&&splashAge<1?'':'none';
+  spray.forEach((drop,i)=>{
+   const angle=Math.PI*(.08+.84*i/11);
+   const dx=Math.cos(angle)*38*splashAge;
+   const dy=-Math.sin(angle)*30*splashAge+25*splashAge*splashAge;
+   drop.setAttribute('x',landed[0]+dx);
+   drop.setAttribute('y',landed[1]+3+dy);
+   drop.setAttribute('opacity',1-splashAge);
+  });
   frog.setAttribute('transform','translate('+x+' '+y+') scale('+direction*(1+.12*arc)+' '+(1-.1*arc)+')');
   frog.setAttribute('aria-label',hopping?'Sapinho pulando pelo jardim e pelas poças':'Sapinho descansando entre os pulos');
  }
@@ -158,6 +174,18 @@ function caption(){
  document.getElementById('sky-caption').textContent='Sorocaba · '+captionDate+' · '+conditions;
 }
 function drawGarden(now){
+ // Calendar time keeps the three-day ripening cycle consistent after reloads.
+ const ripeness=((now-Date.UTC(2026,0,1))%(3*86400000))/(3*86400000);
+ const fruitSeason=seasonAt(Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',month:'2-digit',day:'2-digit'}).format(new Date(now)).replace('/','')));
+ const ripe=fruitSeason==='Outono'?[236,180,73]:fruitSeason==='Inverno'?[190,184,104]:fruitSeason==='Primavera'?[218,211,88]:[247,215,83];
+ garden.querySelectorAll('.guava-fruit').forEach((fruit,i)=>{
+  const f=(ripeness+i*.07)%1;
+  const color=blendColor([91,151,68],ripe,f);
+  fruit.querySelector('path').setAttribute('fill',color);
+  fruit.querySelectorAll('path')[1].setAttribute('fill',blendColor([139,183,89],[255,232,137],f));
+  fruit.setAttribute('aria-label','Goiaba amadurecendo · '+Math.round(f*100)+'%');
+ });
+
  const p=Object.fromEntries(dateFormat.formatToParts(new Date(now)).map(x=>[x.type,x.value]));
  const date=p.day+'/'+p.month;
  if(date!==captionDate){captionDate=date;caption();}
@@ -203,18 +231,14 @@ svg.insertBefore(owl,clock);
 owl.innerHTML='<path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-6-10H6v9H-6z" fill="#efccbd"/><path d="M-7-1h5v3h-5zm9 0h5v3H2z" fill="#efb86c"/><g class="owl-head"><path d="M-10-15v-11l6 4h8l6-4v11l-3 3H-7z" fill="#c79cb8"/><path d="M-8-21H8v7H-8z" fill="#fff4d8"/><path class="owl-pupils" d="M-6-20h2v4h-2zm10 0h2v4H4z" fill="#344057"/><path class="owl-blink" d="M-7-18h5v1h-5zm9 0h5v1H2z" fill="#344057"/><path d="M-2-15h4l-2 3z" fill="#eaa658"/></g>';
 const pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
 const wings=node('path',{d:'M-10-13l-16-8v7l16 9zm20 0l16-8v7l-16 9z',fill:'#ab82a9'},owl);
-wind.removeAttribute('clip-path');
-// The moving wisps show the direction, so hide the old fixed arrows.
-svg.querySelector('path[d^="M91 108"]')?.removeAttribute('visibility');
-
 const routes=[
- 'M91 108H111Q120 108 129 116L173 138Q182 142 182 155H119Q114 155 114 181H93',
- 'M129 103L132 113Q135 120 145 123L173 139Q182 143 182 169H119Q114 169 114 181H93',
- 'M91 108H111Q120 108 129 116L173 138Q183 142 183 183H119Q114 183 108 181H93'
+ 'M116 108Q121 95 131 104L175 129Q185 134 182 150Q173 162 152 149L121 132Q111 126 116 108Z',
+ 'M116 148Q130 135 147 145L176 157Q186 163 183 179Q179 189 162 186L125 178Q113 173 116 148Z',
+ 'M120 187L165 192Q181 193 182 177L181 139Q180 130 169 134L128 146Q115 150 115 165Q114 178 120 187Z'
 ].map(d=>{const p=node('path',{d,fill:'none',stroke:'none'},wind);return {p,len:p.getTotalLength()};});
 const gusts=Array.from({length:7},(_,i)=>{
  const g=node('g',{class:'air-gust',fill:'none',stroke:i%2?'#26758a':'#3d879a','stroke-width':1.6,'stroke-linecap':'round'},wind);
- node('path',{d:'M-7 0H3M0-3l3 3-3 3'},g);
+ node('path',{d:'M-6-2h8q3 0 3-2m-13 5h10m-7 3h8l2-2'},g);
  return g;
 });
 let frame=0,last=-Infinity;
@@ -270,23 +294,19 @@ function draw(now){
   g.setAttribute('transform','translate('+(x0+9*Math.sin(u*.73+i)).toFixed(2)+' '+(180+(i%3)*9+8*Math.cos(u*.82+i*2)).toFixed(2)+')');
   g.setAttribute('opacity',Math.pow(Math.max(0,Math.sin(u*(1.05+i*.08)+i*2.1)),4).toFixed(2));
  });
- gusts.forEach((g,i)=>{
-  g.style.display=wind.classList.contains('coolers-active')&&(i%3===1||svg.dataset.hatches==='ABRIR')?'':'none';
+ if(wind.classList.contains('coolers-active'))gusts.forEach((g,i)=>{
   const {p,len}=routes[i%routes.length];
-  const phase=(now/1000*.12+(i+1)/7)%1,at=phase*len;
-  const a=p.getPointAtLength(at),b=p.getPointAtLength(Math.min(len,at+.9)),angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+  const phase=(now/1000*(.20+(i%3)*.035)+(i+1)/7)%1,at=phase*len;
+  const a=p.getPointAtLength(at),b=p.getPointAtLength((at+.9)%len),angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
   g.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+angle+')');
   g.setAttribute('opacity',(.56+.36*Math.sin(phase*2*Math.PI+i)).toFixed(2));
  });
 }
-function tick(time){frame=0;if(document.hidden)return;try{if(time-last>=32){last=time;draw(Date.now());}}finally{frame=requestAnimationFrame(tick);}}
+function tick(time){frame=0;if(document.hidden)return;if(time-last>=32){last=time;draw(Date.now());}frame=requestAnimationFrame(tick);}
 function sync(){if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0;return;}draw(Date.now());if(!frame)frame=requestAnimationFrame(tick);}
 document.addEventListener('visibilitychange',sync);
-window.addEventListener('pageshow',()=>{last=-Infinity;sync();});
+window.addEventListener('pageshow',sync);
 window.addEventListener('focus',sync);
-// Resume after mobile browsers suspend animation frames while backgrounded.
-let previousFrameTime=0;
-setInterval(()=>{if(!document.hidden&&last===previousFrameTime){if(frame)cancelAnimationFrame(frame);frame=0;last=-Infinity;sync();}previousFrameTime=last;},1000);
 sync();
 
 async function refreshWeather(){
