@@ -9,7 +9,8 @@
   const externalValid=fresh&&d.externo_ok===true&&
    Number.isFinite(d.externo_t)&&d.externo_t>=-40&&d.externo_t<=85&&
    Number.isFinite(d.externo_ur)&&d.externo_ur>=0&&d.externo_ur<=100;
-  return {externalValid,externalT:d.externo_t,externalRH:d.externo_ur,status:fresh?'online':'stale',airValid:fresh&&d.sensor_ok,airT:d.temperatura,airRH:d.umidade,age,coolers:d.coolers_ligados,coolerMode:['on','off','auto'].includes(d.cooler_mode)?d.cooler_mode:null,coolerCommandId:typeof d.cooler_command_id==='string'?d.cooler_command_id:null,test:d.teste,epoch:d.epoch,receivedAt:d.received_at,woodTempValid:fresh&&d.wood_temperature_valid===true&&Number.isFinite(d.wood_temperature)&&d.wood_temperature>=0&&d.wood_temperature<=80,woodTemp:d.wood_temperature,woodValid:fresh&&d.wood_calibrated===true&&Number.isFinite(d.wood_moisture)&&d.wood_moisture>=1&&d.wood_moisture<=200,woodMC:d.wood_moisture,woodBatch:d.batch_id};
+  const restartId=typeof d.restart_id==='string'&&/^[0-9a-f]{32}$/.test(d.restart_id)?d.restart_id:null;
+  return {restartId,stateOnly:d.state_only===true,externalValid,externalT:d.externo_t,externalRH:d.externo_ur,status:fresh?'online':'stale',airValid:fresh&&d.sensor_ok,airT:d.temperatura,airRH:d.umidade,age,coolers:d.coolers_ligados,coolerMode:['on','off','auto'].includes(d.cooler_mode)?d.cooler_mode:null,coolerCommandId:typeof d.cooler_command_id==='string'?d.cooler_command_id:null,test:d.teste,epoch:d.epoch,receivedAt:d.received_at,woodTempValid:fresh&&d.wood_temperature_valid===true&&Number.isFinite(d.wood_temperature)&&d.wood_temperature>=0&&d.wood_temperature<=80,woodTemp:d.wood_temperature,woodValid:fresh&&d.wood_calibrated===true&&Number.isFinite(d.wood_moisture)&&d.wood_moisture>=1&&d.wood_moisture<=200,woodMC:d.wood_moisture,woodBatch:d.batch_id};
  }
  function create(onChange,fetcher=globalThis.fetch.bind(globalThis),clock=()=>performance.now()){
   let packet=null,received=0,busy=false,failed=false;

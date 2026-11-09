@@ -1,5 +1,7 @@
 'use strict';
 let pedidoCooler=null,envioCooler=false,acaoAposLogin=null;
+let pedidoReinicio=null;
+const controleURL=new URL('/api/',window.EstufaLive.endpoint);
 const KEY='estufa-laboratorio-v2',M=window.EstufaModel,P=window.EstufaPlanner,$$=id=>document.getElementById(id);
 const n=(v,d=1)=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -83,7 +85,7 @@ function drawTimer(b,r){
  if(b.status==='closed'){main.textContent='Encerrado';sub.textContent='Este lote foi encerrado por você.';return;}
  if(r.status==='forecast'){
  main.textContent=new Date(r.earliest).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric'});
- sub.textContent='';
+ sub.textContent=r.history?.estimatedHours>0?'Previsão aproximada · lacunas do histórico preenchidas por estimativa.':'';
  }else if(r.status==='target'){main.textContent='Amostra na meta';sub.textContent=r.message;}
  else if(r.status==='estimatedTarget'){main.textContent='Conferir a madeira';sub.textContent=r.message;}
  else if(r.status==='capacity'){main.textContent='Revisar carga';sub.textContent=r.message;}
@@ -288,19 +290,25 @@ $$('wood-reading-form').addEventListener('submit',async event=>{
  $$('wood-reading-time').value='';
  message.textContent='Leitura registrada: '+n(mc)+'% em '+woodStamp.format(epoch)+'.';
 });
-// Somente leituras GET. A página não envia comandos à ESP32.
 state.telemetry=null;
 let liveSignature='';
 const live=window.EstufaLive.create(t=>{
  const signature=JSON.stringify({...t,age:undefined});state.telemetry=t;
- if(typeof processFeed!=='undefined'&&t.status==='online'&&t.airValid){processFeed.addLive(t);const b=active();if(b&&t.woodValid&&t.woodBatch===b.id&&!state.observations.some(o=>o.source==='device'&&o.epoch===t.epoch*1000&&o.batch===b.id)){state.observations.push({batch:b.id,epoch:t.epoch*1000,source:'device',valid:true,calibrated:true,mc:t.woodMC});save();}}
+ atualizarConfirmacaoReinicio(t);
+ if(typeof processFeed!=='undefined'&&t.status==='online'&&t.airValid&&!t.stateOnly){processFeed.addLive(t);const b=active();if(b&&t.woodValid&&t.woodBatch===b.id&&!state.observations.some(o=>o.source==='device'&&o.epoch===t.epoch*1000&&o.batch===b.id)){state.observations.push({batch:b.id,epoch:t.epoch*1000,source:'device',valid:true,calibrated:true,mc:t.woodMC});save();}}
  if(signature!==liveSignature){liveSignature=signature;render();}
 });
 window.addEventListener('live-refresh',()=>live.refresh());
 window.addEventListener('offline',()=>live.offline());
 window.addEventListener('online',()=>{live.refresh();refreshProcess();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshProcess();});
-setInterval(()=>live.tick(),1000);
+setInterval(()=>{
+ live.tick();
+ atualizarConfirmacaoCooler(state.telemetry);
+},1000);
+setInterval(()=>{
+ if(!document.hidden&&(pedidoCooler||pedidoReinicio))live.refresh();
+},2000);
 live.refresh();
 save();resetForm();render();
 if(active())ensureClimate(active().location);
@@ -331,12 +339,14 @@ function atualizarConfirmacaoCooler(t){
   document.getElementById(id).setAttribute('aria-pressed',String(online&&t.coolerMode===mode));
  }
  const status=document.getElementById('cooler-command-status');
- if(!pedidoCooler){status.textContent='';return;}
- const {id,mode}=pedidoCooler;
+ if(!pedidoCooler||envioCooler)return;
+ const {id,mode,deadline}=pedidoCooler;
  const label=mode==='on'?'Ligar':mode==='off'?'Desligar':'Programação automática';
  const acknowledged=online&&t.coolerCommandId===id&&t.coolerMode===mode;
  const matchesOutput=mode==='auto'||t?.coolers===(mode==='on');
- status.textContent=acknowledged?(matchesOutput?label+' · confirmado pela ESP32.':label+' · recebido, mas o estado reportado diverge.'):label+' · aguardando confirmação da ESP32…';
+ const expired=Date.now()>=deadline;
+ status.textContent=acknowledged?(matchesOutput?label+' · confirmado pela ESP32.':label+' · recebido, mas o estado reportado diverge.'):expired?label+' · sem confirmação da ESP32.':label+' · aguardando confirmação da ESP32…';
+ if(acknowledged||expired)pedidoCooler=null;
 }
 function solicitarAcessoAba(){
  if(!window.abaProtegidaPendente)return;
@@ -352,17 +362,62 @@ function minutoCooler(s){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(s))return NaN;cons
 async function enviarCoolerSimples(payload){
  if(envioCooler)return false;
  envioCooler=true;
+ pedidoCooler=null;
  const ids=['cooler-auto','cooler-on','cooler-off','cooler-dialog-confirm'];ids.forEach(id=>document.getElementById(id).disabled=true);
  const status=document.getElementById('cooler-command-status'),error=document.getElementById('cooler-dialog-error');error.textContent='';status.textContent='Enviando…';
  const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),15000);
  try{
-  const response=await fetch('https://estufa-api.josequiriri132.workers.dev/api/coolers',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken},body:JSON.stringify(payload),signal:abort.signal,cache:'no-store',credentials:'omit'});
+  const response=await fetch(new URL('coolers',controleURL),{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken},body:JSON.stringify(payload),signal:abort.signal,cache:'no-store',credentials:'omit'});
   const data=await response.json();if(!response.ok)throw Error(response.status===401?'Entre novamente para autorizar.':'Não foi possível enviar. Tente novamente.');
   if(!data.command?.id||!['on','off','auto'].includes(data.command.mode))throw Error('Resposta inválida do controle.');
-  pedidoCooler=data.command;atualizarConfirmacaoCooler(state.telemetry);return true;
+  pedidoCooler={...data.command,deadline:Date.now()+90000};
+  live.refresh();
+  return true;
  }catch(e){status.textContent=e.name==='AbortError'?'Envio não confirmado. Confira o estado antes de repetir.':e.message;error.textContent=status.textContent;return false;}
- finally{clearTimeout(timer);envioCooler=false;ids.forEach(id=>document.getElementById(id).disabled=false);}
+ finally{clearTimeout(timer);envioCooler=false;atualizarConfirmacaoCooler(state.telemetry);ids.forEach(id=>document.getElementById(id).disabled=false);}
 }
+
+function atualizarConfirmacaoReinicio(t){
+ if(!pedidoReinicio)return;
+ const status=$$('esp32-restart-status');
+ const confirmou=t?.status==='online'&&t.restartId===pedidoReinicio.id;
+ if(!confirmou&&Date.now()<pedidoReinicio.deadline)return;
+ status.textContent=confirmou?'A ESP32 reiniciou e voltou a se comunicar.':'A ESP32 não confirmou o retorno após o pedido.';
+ pedidoReinicio=null;
+ $$('esp32-restart').disabled=false;
+}
+
+$$('esp32-restart').onclick=async()=>{
+ const button=$$('esp32-restart'),status=$$('esp32-restart-status');
+ if(!cloudToken||button.disabled||!window.confirm('Reiniciar a ESP32 agora? Os coolers podem parar brevemente.'))return;
+ button.disabled=true;
+ status.textContent='Enviando pedido de reinício…';
+ try{
+  const response=await fetch(new URL('reiniciar',controleURL),{
+   method:'POST',headers:{Authorization:'Bearer '+cloudToken},
+   signal:AbortSignal.timeout(10000),cache:'no-store',credentials:'omit'
+  });
+  const data=await response.json();
+  if(!response.ok){
+   const errors={
+    firmware_required:'Grave o firmware atualizado na ESP32 e aguarde o primeiro envio.',
+    esp32_offline:'A ESP32 está sem comunicação recente. Verifique a alimentação e o Wi-Fi.',
+    restart_pending:'Já existe um pedido de reinício em andamento.',
+    unauthorized:'Entre novamente para autorizar o reinício.'
+   };
+   status.textContent=errors[data.error]||'O serviço de reinício está indisponível.';
+   return;
+  }
+  if(!/^[0-9a-f]{32}$/.test(data.command?.id||''))throw Error('Resposta inválida');
+  pedidoReinicio={id:data.command.id,deadline:Date.now()+90000};
+  status.textContent='Pedido enviado. Aguardando a ESP32 voltar…';
+  live.refresh();
+ }catch{
+  status.textContent='O envio do pedido ficou sem confirmação. Confira a conexão antes de repetir.';
+ }finally{
+  button.disabled=!!pedidoReinicio;
+ }
+};
 async function abrirProgramacaoSimples(){
  const dialog=document.getElementById('cooler-dialog'),error=document.getElementById('cooler-dialog-error');
  error.textContent='Carregando…';document.getElementById('cooler-dialog-confirm').disabled=true;dialog.showModal();
