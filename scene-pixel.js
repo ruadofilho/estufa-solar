@@ -99,19 +99,21 @@
     `, horizon);
     const woods = add(sky, '', horizon.nextElementSibling);
     woods.setAttribute('class', 'pixel-ridges');
-    const firs = [
-      [14, 192, .72], [22, 191, 1], [31, 193, .66], [45, 187, 1.11],
-      [52, 189, .8], [68, 183, .61], [78, 185, .78],
-      [219, 191, .62], [227, 188, .9], [239, 186, .66],
-      [248, 188, .91], [258, 190, .61], [328, 191, .78],
-      [344, 190, .66], [369, 187, 1], [379, 189, .77], [391, 192, .92]
+    const broadleafTrees = [
+      [8, 193, .66, '#5d8476'], [23, 191, .98, '#527e71'],
+      [43, 189, .81, '#668979'], [61, 185, .96, '#5f8274'], [80, 189, .66, '#648d7e'],
+      [218, 191, .72, '#608579'], [237, 190, 1.02, '#527e71'], [256, 191, .72, '#698b7b'],
+      [328, 191, .76, '#62897b'], [347, 190, .83, '#537c72'],
+      [367, 188, .99, '#648b7b'], [391, 192, .88, '#547f71']
     ];
-    for (const [x, y, scale] of firs) {
-      const fir = add(woods, `
-        <path d="M-1-22h2v3h2v4h2v3h2v4h2v4H1v4h-2v-4h-8v-4h2v-4h2v-3h2v-4h2z" fill="#547d75" opacity=".82"/>
-        <path d="M-1-18h2v5h2v4h2v3H1v2h-3v-3h2v-4h-2v-3h1z" fill="#9ab99a" opacity=".46"/>
+    for (const [x, y, scale, foliage] of broadleafTrees) {
+      const tree = add(woods, `
+        <path d="M-2 0v-9h-3v-4h2v3h3v-6h2v7h3v-3h2v4H3v8z" fill="#697b66"/>
+        <path d="M-15-12v-4h3v-4h5v-2h5v-2h7v2h6v3h4v4h3v4h-3v3H8v2H-3v-1h-9v-2h-4v-3z" fill="${foliage}"/>
+        <path d="M-12-15h3v-4h6v-2h7v1h6v3h3v3H9v-2H4v-2H-1v2h-6v2h-5z" fill="#a2b795" opacity=".42"/>
+        <path d="M-11-10h6v2h8v-2h7v-2h5v3H8v2H-3v-1h-8z" fill="#3f6d65" opacity=".5"/>
       `);
-      fir.setAttribute('transform', `translate(${x} ${y}) scale(${scale})`);
+      tree.setAttribute('transform', `translate(${x} ${y}) scale(${scale})`);
     }
   }
   scene.querySelector('.sky-sun')?.setAttribute('fill', 'url(#pixel-sun)');
