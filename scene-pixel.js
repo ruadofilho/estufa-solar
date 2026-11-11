@@ -254,6 +254,12 @@
     add(owlHead.parentNode, '<path d="M-5-9h2v1h-2zm6 0h2v1H1zm-4 3h2v1h-2zm5 1h2v1H2zm-2 2h2v1H0z" fill="#bb8f9b" opacity=".7"/>', owlHead);
     add(owlHead, '<path d="M-9-23h2v1h-2zm2 1h3v1h-3zm11 0h3v1H4zm3-1h2v1H7z" fill="#f3c6d7"/><path d="M-8-16h2v1h-2zm14 0h2v1H6z" fill="#e5a6a8"/><path d="M-7-13h3v1h-3zm11 0h3v1H4z" fill="#a66c97"/>');
   }
+  const vulture = scene.querySelector('#scene-vulture');
+  if (vulture) {
+    add(vulture, '<path d="M-5-13h3v1h-3zm6 1h3v1H1zm-5 3h2v1h-2zm6 2h2v1H2z" fill="#a1a7aa" opacity=".58"/><path d="M-5-20h2v2h-2zm6 0h2v2H1z" fill="#fff1d5"/><path d="M-7-27h2v1h-2zm10-2h2v1H3zM-1-21h3v1h-3z" fill="#e1bdad"/><path d="M-7-5h3v1h-3zm11 0h3v1H4z" fill="#273740"/>');
+    const wings = vulture.querySelector('.vulture-wings');
+    if (wings) add(wings, '<path d="M-31-18h5v1h-5zm5 4h5v1h-5zm5 4h5v1h-5zm47-8h5v1h-5zm-5 4h5v1h-5zm-5 4h5v1h-5z" fill="#acb4b8" opacity=".62"/>');
+  }
   const frog = scene.querySelector('#scene-frog');
   if (frog) {
     add(frog, '<path d="M-7-4h2v1h-2zm12 0h2v1H5zm-4-3h2v1H1z" fill="#c1d784"/><path d="M-4 0h8v1h-8z" fill="#b1be75"/>');

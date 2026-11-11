@@ -156,76 +156,24 @@ function mount(){
  const vulture=make('g',{id:'scene-vulture',role:'img','shape-rendering':'crispEdges'});
  svg.insertBefore(vulture,owl);
  vulture.innerHTML=`
-  <g class="vulture-wings" fill="#050505">
-   <path d="M-4-15l-11-12-14-4 2 7 5 4 1 5 7 4 9 1z"/>
-   <path d="M-3-13l-13-6-14 3 4 5 6 1 2 4 13-1z"/>
+  <g class="vulture-wings">
+   <path d="M-10-16l-11-9h-15v5h4v5h5v4h5v4l12 4zm20 0 11-9h15v5h-4v5h-5v4h-5v4l-12 4z" fill="#37434d"/>
+   <path d="M-14-14l-9-7h-9m7 6 9 6m30-5 9-7h9m-7 6-9 6" fill="none" stroke="#78828b" stroke-width="2"/>
   </g>
-  <path fill="#080808" d="M-3-18h6l2-7h3v-3h7v2h3v3h4v2h-3v3h-3v-2h-6l-2 4 3 4v5H8v4H-5l-10 1-4 4h-6l6-8 6-6z"/>
-  <path fill="#181818" d="M-11-13h13v3h4v3H-7l-9 4 3-6z"/>
-  <path fill="#050505" d="M-3-5h3v4h5v2h-8zm7 0h3v4h5v2H4z"/>
-  <path fill="#303030" d="M14-25h2v2h-2z"/>`;
+  <path d="M-8-5h16v6H-8z" fill="#313b45"/>
+  <path d="M-8-18H8v3h4v9H8v4H-8v-4h-4v-9h4z" fill="#414c56"/>
+  <path d="M-6-14H6v10H-6z" fill="#64717c"/>
+  <path d="M-8-20H8v3H5v2H-5v-2h-3z" fill="#f0dec6"/>
+  <path d="M-6-29H6v2h2v6H6v3H-6v-3h-2v-6h2z" fill="#a3a0ac"/>
+  <path d="M-5-27H5v2H-5z" fill="#c4bbc4"/>
+  <path d="M-7-22h2v2h-2zm12 0h2v2H5z" fill="#cb97a6"/>
+  <path class="vulture-eyes" d="M-5-25h3v3h-3zm7 0h3v3H2z" fill="#26333c"/>
+  <path class="vulture-blink" d="M-6-23h4v1h-4zm8 0h4v1H2z" fill="#26333c"/>
+  <path d="M-2-22h5v4H1v2h-2v-3h-1z" fill="#ebba7f"/>
+  <path d="M-7-2h5v3h-5zm9 0h5v3H2z" fill="#c6a483"/>`;
  const vultureWings=vulture.querySelector('.vulture-wings');
- const coop=group('scene-henhouse');
- svg.insertBefore(coop,owl);
- coop.innerHTML=`
-  <path fill="#523c2e" d="M20 191h4v13h-4zm30 0h4v13h-4z"/>
-  <path fill="#a77349" stroke="#573d2c" d="M17 173h39v25H17z"/>
-  <path fill="#765035" d="M18 180h37v1H18zm0 8h37v1H18zm0 7h37v1H18z"/>
-  <path fill="#5c4738" stroke="#382f29" d="M13 174l8-10h31l8 10z"/>
-  <path fill="#ad8b60" d="M20 168h33v2H20z"/>
-  <path fill="#493429" d="M44 182h11v16H44z"/>
-  <path fill="#b89261" stroke="#62462f" d="M45 197h10l9 8H52z"/>
-  <path fill="#777863" stroke="#543c29" d="M23 179h11v8H23z"/>
-  <path stroke="#bdad81" d="M28 179v8m-5-4h11"/>
-  <path class="henhouse-door" fill="#8b603d" stroke="#573d2c" d="M44 182h11v16H44z"/>`;
- const hen=make('g',{id:'scene-hen',role:'img','shape-rendering':'crispEdges'});
- svg.insertBefore(hen,owl);
- hen.innerHTML=`
-  <path class="hen-legs" fill="none" stroke="#a56836" stroke-width="1.4" d="M-4-5v4h4m3-4v4h4"/>
-  <path fill="#82452b" d="M-7-7l-7-5v-4h3l7 6z"/>
-  <path fill="#ba7244" stroke="#6c402b" d="M-9-11h13l5 4-3 4H-5l-4-3z"/>
-  <path fill="#e2a465" d="M-6-10h8v2h2v2h-9z"/>
-  <g class="hen-head">
-   <path fill="#d98f52" stroke="#78462e" d="M4-9v-8h7v2h2v5H9v3z"/>
-   <path fill="#a44435" d="M5-17v-3h2v2h2v-3h2v4zm5 7h2v3h-2z"/>
-   <path fill="#e5b460" d="M13-14h4v2h-4z"/>
-   <path fill="#332b22" d="M10-16h1v1h-1z"/>
-  </g>`;
- const henHead=hen.querySelector('.hen-head'),henLegs=hen.querySelector('.hen-legs');
- const coopDoor=coop.querySelector('.henhouse-door');
- let henDay=null,henChangedAt=0,henX=49,henOrigin=49;
- function drawHen(now,day,still){
-  if(day!==henDay){
-   henOrigin=henDay===null&&day?49:henX;
-   henChangedAt=now;
-   henDay=day;
-  }
-  const age=Math.max(0,now-henChangedAt);
-  const travel=day?3000:Math.max(900,(henOrigin-49)*100);
-  const entering=!day&&age<travel&&henOrigin>49&&!still;
-  const leaving=day&&age<travel&&!still;
-  const activity=Math.max(0,age-travel);
-  const round=activity%9600;
-  const walk=round>=7200;
-  const distance=Math.floor(activity/9600)*7+Math.max(0,round-7200)*7/2400;
-  const route=distance%50;
-  const forward=route<25;
-  const peck=activity%2400;
-  const scratch=!walk&&peck>1320;
-  const stride=Math.sin(now/75);
-  const direction=entering||(!leaving&&!forward)?-1:1;
-  henX=entering?henOrigin+(49-henOrigin)*Math.min(1,age/travel):
-   leaving?49+18*age/travel:still?75:67+(forward?route:50-route);
-  show(hen,day||entering);
-  show(coopDoor,!day&&!entering);
-  const y=henX<63?198+(henX-49)*.5:205;
-  hen.setAttribute('transform','translate('+henX.toFixed(2)+' '+y.toFixed(2)+') scale('+direction+' 1)');
-  const dip=still?30:entering||leaving||walk||scratch?0:66*Math.pow(Math.max(0,Math.sin(peck/105)),2);
-  henHead.setAttribute('transform','rotate('+dip+' 5 -8)');
-  const kick=still?0:entering||leaving||walk?stride*2:scratch?Math.max(0,stride)*5:0;
-  henLegs.setAttribute('d','M-4-5l'+(-kick)+' 4h4m'+(7+kick)+'-4l'+kick+' 4h4');
-  hen.setAttribute('aria-label',entering?'Galinha voltando ao galinheiro':leaving?'Galinha saindo do galinheiro':walk?'Galinha andando pelo terreno':scratch?'Galinha ciscando':'Galinha bicando o chão');
- }
+ const vultureEyes=vulture.querySelector('.vulture-eyes');
+ const vultureBlink=vulture.querySelector('.vulture-blink');
  const balloons=group('owl-birthday-balloons',decorations),ornaments=group('owl-festival-ornaments',decorations);
  const pose=make('g',{},owl);while(owl.firstChild!==pose)pose.append(owl.firstChild);
  const head=pose.querySelector('.owl-head'),pupils=pose.querySelector('.owl-pupils'),blink=pose.querySelector('.owl-blink'),wings=pose.lastElementChild;
@@ -276,10 +224,12 @@ function mount(){
   show(vulture,birdPose.visible);
   move(vulture,birdPose.x,birdPose.y);
   show(vultureWings,birdPose.drying||birdPose.flying);
-  drawHen(now,!night,motion.matches);
+  const eyesShut=now%6700<150;
+  show(vultureEyes,!eyesShut);
+  show(vultureBlink,eyesShut);
   const vultureLabel=birdPose.drying?'Urubu secando as asas no telhado':birdPose.flying?'Urubu voando':birdPose.perch==='roof'?'Urubu pousado na estufa':'Urubu pousado na goiabeira';
   if(vulture.getAttribute('aria-label')!==vultureLabel)vulture.setAttribute('aria-label',vultureLabel);
-  const sceneLabel=night?'Estufa solar com corujinha e goiabeira à noite.':'Estufa solar com urubu, galinha e goiabeira durante o dia.';
+  const sceneLabel=night?'Estufa solar com corujinha e goiabeira à noite.':'Estufa solar com urubu e goiabeira durante o dia.';
   if(svg.getAttribute('aria-label')!==sceneLabel)svg.setAttribute('aria-label',sceneLabel);
   decorate(d,ev);
   const eligible=ripe.filter(i=>picked[i]!==fruitCycle(d.serial,i));
