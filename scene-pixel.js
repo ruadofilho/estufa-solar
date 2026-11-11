@@ -128,36 +128,8 @@
     `);
   }
 
-  // Give the roof and far wall depth while keeping the cutaway readable.
-  add(scene, `
-    <path fill="#335752" stroke="#2d4649" stroke-width="2" d="M190 128l15-7v71l-15 9z"/>
-    <path fill="#557e76" d="M193 132l9-5v61l-9 6z"/>
-    <path fill="#98b4a0" opacity=".53" d="M194 132l3-2v60l-3 2z"/>
-    <path fill="url(#pixel-roof-plane)" stroke="#2b474d" stroke-width="2" d="M107 80l14-9 86 47-16 10z"/>
-    <path d="M122 74l81 44-3 2-81-44z" fill="#d6e6c8" opacity=".65"/>
-    <path d="M125 77l-10 7m24 0-11 8m25 0-11 8m25 0-11 8m25 0-11 8m24 0-11 7" fill="none" stroke="#406474" stroke-width="1" opacity=".83"/>
-    <path fill="#c0dbbd" opacity=".62" d="M130 81l9 5-2 2-9-5zM157 96l10 5-2 2-10-5zM184 111l9 5-2 2-9-5z"/>
-  `, kiln);
-
-  // Lay the reflections under the load and the animated air paths.
   kiln.firstElementChild.setAttribute('fill', 'url(#pixel-glass)');
-  const glass = add(kiln, `
-    <path fill="#6d9b98" opacity=".24" d="M181 128l6 3v65h-6zM111 191h76v6h-76z"/>
-    <path fill="#f6ffe7" opacity=".41" d="M113 95l24 13-24 31zM144 112l9 5-35 50h-4zM156 119l5 3-21 29h-4z"/>
-    <path fill="none" stroke="#f5fff0" stroke-width="1" opacity=".7" d="M113 147v31m1 4v6M184 136v35"/>
-    <path fill="#4a6655" d="M111 195h76v2h-76z"/>
-    <path fill="#abcbb4" d="M115 194h7v1h-7zm15 0h7v1h-7zm15 0h7v1h-7zm15 0h7v1h-7zm15 0h7v1h-7z"/>
-    <path d="M110 151h77m-77 24h77" stroke="#335d63" stroke-width="1" opacity=".13"/>
-    <path d="M111 182h25v1h-25zm21 5h17v1h-17zm19-22h13v1h-13zm13-13h23v1h-23z" fill="#fbffe8" opacity=".42"/>
-  `, kiln.querySelector('#kiln-wood'));
-  glass.setAttribute('class', 'pixel-glass-light');
-  add(kiln, `
-    <path fill="none" stroke="#b2d7cf" stroke-width="1" d="M109 79l81 44"/>
-    <path fill="none" stroke="#507b84" stroke-width="1" d="M109 85l81 44"/>
-    <path fill="#97b7aa" d="M108 100h2v2h-2zm0 21h2v2h-2zm0 22h2v2h-2zm0 25h2v2h-2zm0 22h2v2h-2zm81-50h2v2h-2zm0 25h2v2h-2zm0 25h2v2h-2z"/>
-    <path fill="#edcca1" d="M126 101h2v5h-1v5h-1z"/>
-    <path fill="#77968e" d="M107 197h84v1h-84zM188 130h1v65h-1z"/>
-  `, kiln.querySelector('#kiln-wind'));
+  kiln.querySelector('.kiln-roof-cover')?.setAttribute('fill', 'url(#pixel-roof-plane)');
 
   const field = add(scene, `
     <path fill="#294b43" opacity=".5" d="M101 201h92l10 3h-11l-5 2h-76l-7-2h-9zM290 201h22l11 3h-7l8 2h-34l-9-2z"/>
@@ -190,30 +162,33 @@
 
   function decorateTree() {
     const tree = scene.querySelector('.guava-tree');
-    if (!tree || tree.querySelector('.pixel-canopy-light')) return;
-    add(tree, `
-      <path fill="#3c4336" opacity=".28" d="M302 162h2v36h-2zm-4-19h2v15h-2zm14-26h2v15h-2zm-34 35h11v2h-11zm43-13h2v7h-2z"/>
-      <path fill="#efd1a0" opacity=".51" d="M299 170h1v9h-1zm0 16h1v8h-1zm7-45h1v10h-1zm-15-18h1v8h-1zm29 24h3v1h-3z"/>
-      <path fill="#223e31" opacity=".21" d="M276 74h12v4h15v-6h18v-4h6v7h-22v8h-20v-5h-9zM244 102h15v5h17v-4h12v5h-16v9h-21v-7h-7zM321 104h15v6h19v-5h8v5h-18v6h-22zM279 122h15v7h22v-5h8v8h-24v-5h-15z"/>
-    `);
-    const leaves = add(tree, `
-      <path fill="#d9de9c" opacity=".58" d="M281 59h7v2h-7zm10 4h4v2h-4zm9-12h12v2h-12zm16 8h6v2h-6zm-59 32h8v2h-8zm11-7h10v2h-10zm7 14h5v2h-5zm7 13h8v2h-8zm14 5h5v2h-5zm9-10h7v2h-7zm11 11h4v2h-4zm16-31h8v2h-8zm10-8h8v2h-8zm9 13h8v2h-8zm-17 7h5v2h-5z"/>
-      <path fill="#f1e9aa" opacity=".55" d="M284 62h2v1h-2zm22-9h2v1h-2zm12 8h2v1h-2zm-59 33h2v1h-2zm16-6h2v1h-2zm14 29h2v1h-2zm20-7h2v1h-2zm31-22h2v1h-2zm11-7h2v1h-2z"/>
-    `);
-    leaves.setAttribute('class', 'pixel-canopy-light');
-    const leafGroups = [
-      [276,66], [286,58], [297,63], [307,53], [319,61], [309,72],
-      [253,99], [262,91], [273,86], [283,94], [266,108],
-      [284,115], [296,110], [305,118], [318,112], [313,127],
-      [326,95], [337,86], [348,80], [357,91], [344,103], [358,102]
-    ];
-    for (const [x, y] of leafGroups) {
-      const leaf = add(leaves, `
-        <path d="M-5 0h2v-2h5v1h2v2H1v2h-4V2h-2z" fill="#bad37d" opacity=".31"/>
-        <path d="M-2-1h3v1h-3zM2 0h1v1H2z" fill="#e5e5a7" opacity=".69"/>
-        <path d="M-3 2h5v1h-5zM0 3h3v1H0z" fill="#354f3e" opacity=".38"/>
+    if (!tree || tree.dataset.pixelDecorated) return;
+    tree.dataset.pixelDecorated = 'true';
+    if (!tree.querySelector('.guava-tree-art')) {
+      add(tree, `
+        <path fill="#3c4336" opacity=".28" d="M302 162h2v36h-2zm-4-19h2v15h-2zm14-26h2v15h-2zm-34 35h11v2h-11zm43-13h2v7h-2z"/>
+        <path fill="#efd1a0" opacity=".51" d="M299 170h1v9h-1zm0 16h1v8h-1zm7-45h1v10h-1zm-15-18h1v8h-1zm29 24h3v1h-3z"/>
+        <path fill="#223e31" opacity=".21" d="M276 74h12v4h15v-6h18v-4h6v7h-22v8h-20v-5h-9zM244 102h15v5h17v-4h12v5h-16v9h-21v-7h-7zM321 104h15v6h19v-5h8v5h-18v6h-22zM279 122h15v7h22v-5h8v8h-24v-5h-15z"/>
       `);
-      leaf.setAttribute('transform', `translate(${x} ${y})`);
+      const leaves = add(tree, `
+        <path fill="#d9de9c" opacity=".58" d="M281 59h7v2h-7zm10 4h4v2h-4zm9-12h12v2h-12zm16 8h6v2h-6zm-59 32h8v2h-8zm11-7h10v2h-10zm7 14h5v2h-5zm7 13h8v2h-8zm14 5h5v2h-5zm9-10h7v2h-7zm11 11h4v2h-4zm16-31h8v2h-8zm10-8h8v2h-8zm9 13h8v2h-8zm-17 7h5v2h-5z"/>
+        <path fill="#f1e9aa" opacity=".55" d="M284 62h2v1h-2zm22-9h2v1h-2zm12 8h2v1h-2zm-59 33h2v1h-2zm16-6h2v1h-2zm14 29h2v1h-2zm20-7h2v1h-2zm31-22h2v1h-2zm11-7h2v1h-2z"/>
+      `);
+      leaves.setAttribute('class', 'pixel-canopy-light');
+      const leafGroups = [
+        [276,66], [286,58], [297,63], [307,53], [319,61], [309,72],
+        [253,99], [262,91], [273,86], [283,94], [266,108],
+        [284,115], [296,110], [305,118], [318,112], [313,127],
+        [326,95], [337,86], [348,80], [357,91], [344,103], [358,102]
+      ];
+      for (const [x, y] of leafGroups) {
+        const leaf = add(leaves, `
+          <path d="M-5 0h2v-2h5v1h2v2H1v2h-4V2h-2z" fill="#bad37d" opacity=".31"/>
+          <path d="M-2-1h3v1h-3zM2 0h1v1H2z" fill="#e5e5a7" opacity=".69"/>
+          <path d="M-3 2h5v1h-5zM0 3h3v1H0z" fill="#354f3e" opacity=".38"/>
+        `);
+        leaf.setAttribute('transform', `translate(${x} ${y})`);
+      }
     }
     for (const fruit of tree.parentNode.querySelectorAll('.guava-fruit')) {
       add(fruit, '<path d="M-2-3h2v1h-2zM-3-1h1v2h-1z" fill="#fff1ae" opacity=".76"/><path d="M0 2h3v1H2v2H0z" fill="#8c7848" opacity=".53"/><path d="M1-5h2v1H1z" fill="#50774d"/><path d="M2 0h1v1H2zM1 2h1v1H1z" fill="#998a52" opacity=".65"/>');
