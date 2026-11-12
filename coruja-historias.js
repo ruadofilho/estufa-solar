@@ -69,7 +69,7 @@ const skyArt={
  witch:'<path d="M-19 6H18" stroke="#d2a877" stroke-width="2"/><path d="m-20 4-12-4v11l12-3z" fill="#b18363"/><path d="M-10 5l7-14 7 2 5 12z" fill="#4d376a"/><path d="M-3-11H7v5H1z" fill="#e5b69d"/><path d="m-8-12 7-1 4-11 6 11 5 1v2H-8z" fill="#50386b"/><path d="M3-4l11 7" stroke="#e5b69d" stroke-width="2"/>',
  fairy:'<path d="M-2 0-18-15v10l6 7-5 3 3 5 12-6M2 0l16-15v10l-6 7 5 3-3 5L2 4" fill="#d5ccfa" stroke="#f2dfff" opacity=".95"/><path d="M-5 2h10l6 10H-10z" fill="#e58bb9"/><path d="M-4-10h8v9h-8z" fill="#fbd4bd"/><path d="M-5-11h10v3H-2v3h-3z" fill="#edc571"/><path d="M4 3l11-8" stroke="#fbd4bd" stroke-width="2"/><path d="M16-11v9m-4-5h9M-21 2v5m-2-2h5M22 5v5m-2-2h5" stroke="#fff3b2"/>'
 };
-const illustratedPerches={roof:[82,87],tree:[301,52],away:perches.away};
+const illustratedPerches={roof:[82,87],tree:[254,145],away:perches.away};
 class Vulture{
  constructor(rain={},random=Math.random){
   this.random=random;
