@@ -129,7 +129,7 @@
   }
 
   // Give the roof and far wall depth while keeping the cutaway readable.
-  add(scene, `
+  const kilnDepth = add(scene, `
     <path fill="#335752" stroke="#2d4649" stroke-width="2" d="M190 128l15-7v71l-15 9z"/>
     <path fill="#557e76" d="M193 132l9-5v61l-9 6z"/>
     <path fill="#98b4a0" opacity=".53" d="M194 132l3-2v60l-3 2z"/>
@@ -138,6 +138,7 @@
     <path d="M125 77l-10 7m24 0-11 8m25 0-11 8m25 0-11 8m25 0-11 8m24 0-11 7" fill="none" stroke="#406474" stroke-width="1" opacity=".83"/>
     <path fill="#c0dbbd" opacity=".62" d="M130 81l9 5-2 2-9-5zM157 96l10 5-2 2-10-5zM184 111l9 5-2 2-9-5z"/>
   `, kiln);
+  kilnDepth.classList.add('pixel-kiln-depth');
 
   // Lay the reflections under the load and the animated air paths.
   kiln.firstElementChild.setAttribute('fill', 'url(#pixel-glass)');
@@ -151,13 +152,14 @@
     <path d="M111 182h25v1h-25zm21 5h17v1h-17zm19-22h13v1h-13zm13-13h23v1h-23z" fill="#fbffe8" opacity=".42"/>
   `, kiln.querySelector('#kiln-wood'));
   glass.setAttribute('class', 'pixel-glass-light');
-  add(kiln, `
+  const kilnTrim = add(kiln, `
     <path fill="none" stroke="#b2d7cf" stroke-width="1" d="M109 79l81 44"/>
     <path fill="none" stroke="#507b84" stroke-width="1" d="M109 85l81 44"/>
     <path fill="#97b7aa" d="M108 100h2v2h-2zm0 21h2v2h-2zm0 22h2v2h-2zm0 25h2v2h-2zm0 22h2v2h-2zm81-50h2v2h-2zm0 25h2v2h-2zm0 25h2v2h-2z"/>
     <path fill="#edcca1" d="M126 101h2v5h-1v5h-1z"/>
     <path fill="#77968e" d="M107 197h84v1h-84zM188 130h1v65h-1z"/>
   `, kiln.querySelector('#kiln-wind'));
+  kilnTrim.classList.add('pixel-kiln-trim');
 
   const field = add(scene, `
     <path fill="#294b43" opacity=".5" d="M101 201h92l10 3h-11l-5 2h-76l-7-2h-9zM290 201h22l11 3h-7l8 2h-34l-9-2z"/>

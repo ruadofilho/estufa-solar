@@ -60,7 +60,7 @@ function drawRainVisitors(now){
  if(!raining&&previousRain)rainStopped=now;
  previousRain=raining;
  const rainAge=rainStarted===null?0:Math.max(0,now-rainStarted);
- const water=raining?Math.min(1,rainAge/30000):rainStopped===null?0:Math.max(0,1-(now-rainStopped)/120000);
+ const water=raining?Math.min(1,rainAge/(window.ESTUFA_PREVIEW?1000:30000)):rainStopped===null?0:Math.max(0,1-(now-rainStopped)/120000);
  puddles.style.display=water>0?'':'none';
  puddles.setAttribute('opacity',water.toFixed(2));
  frog.style.display=raining?'':'none';
@@ -90,6 +90,7 @@ function drawRainVisitors(now){
   const hopping=phase>=from[2];
   const fraction=hopping?(phase-from[2])/hopMs:0;
   const arc=Math.sin(Math.PI*fraction);
+  window.EstufaArt?.paintFrog(frog,{hopping,fraction,phase,rest:from[2]});
   const direction=to[0]>=from[0]?1:-1;
   const x=from[0]+(to[0]-from[0])*fraction;
   const y=from[1]+(to[1]-from[1])*fraction-26*arc;
@@ -121,6 +122,7 @@ function updateDaylight(now){
  const dawn=Math.max(0,Math.min(1,(now-day.rise+45*minute)/(80*minute)));
  const dusk=Math.max(0,Math.min(1,(day.set+45*minute-now)/(80*minute)));
  const light=Math.min(dawn,dusk);
+ svg.dataset.light=light.toFixed(3);
  const cloudy=!['clear','partly'].includes(svg.dataset.weather);
  const top=cloudy?[159,177,190]:[97,157,193];
  const bottom=cloudy?[214,222,225]:[184,215,223];
@@ -209,10 +211,12 @@ const gusts=Array.from({length:7},(_,i)=>{
  node('path',{d:'M-6-2h8q3 0 3-2m-13 5h10m-7 3h8l2-2'},g);
  return g;
 });
+window.EstufaArt?.mount(svg,sky,garden);
 let frame=0,last=-Infinity;
 function draw(now){
  drawGarden(now);
  updateDaylight(now);
+ window.EstufaArt?.light(svg,now);
  clouds.setAttribute('transform','translate('+(-515*((now%105000)/105000))+' 0)');
  rainDrops.forEach(({drop,x:originX,y:originY})=>{
   const x=((originX-now/55)%420+420)%420;
@@ -276,5 +280,5 @@ async function refreshWeather(){
   updateDaylight(Date.now());
  }catch{}finally{clearTimeout(timeout);}
 }
-refreshWeather();setInterval(()=>{if(!document.hidden)refreshWeather();},15*60000);
+if(!window.ESTUFA_PREVIEW){refreshWeather();setInterval(()=>{if(!document.hidden)refreshWeather();},15*60000);}
 })();

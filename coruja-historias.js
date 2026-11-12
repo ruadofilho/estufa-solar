@@ -69,6 +69,7 @@ const skyArt={
  witch:'<path d="M-19 6H18" stroke="#d2a877" stroke-width="2"/><path d="m-20 4-12-4v11l12-3z" fill="#b18363"/><path d="M-10 5l7-14 7 2 5 12z" fill="#4d376a"/><path d="M-3-11H7v5H1z" fill="#e5b69d"/><path d="m-8-12 7-1 4-11 6 11 5 1v2H-8z" fill="#50386b"/><path d="M3-4l11 7" stroke="#e5b69d" stroke-width="2"/>',
  fairy:'<path d="M-2 0-18-15v10l6 7-5 3 3 5 12-6M2 0l16-15v10l-6 7 5 3-3 5L2 4" fill="#d5ccfa" stroke="#f2dfff" opacity=".95"/><path d="M-5 2h10l6 10H-10z" fill="#e58bb9"/><path d="M-4-10h8v9h-8z" fill="#fbd4bd"/><path d="M-5-11h10v3H-2v3h-3z" fill="#edc571"/><path d="M4 3l11-8" stroke="#fbd4bd" stroke-width="2"/><path d="M16-11v9m-4-5h9M-21 2v5m-2-2h5M22 5v5m-2-2h5" stroke="#fff3b2"/>'
 };
+const illustratedPerches={roof:[82,87],tree:[301,52],away:perches.away};
 class Vulture{
  constructor(rain={},random=Math.random){
   this.random=random;
@@ -96,7 +97,7 @@ class Vulture{
   this.next=now+CONFIG.flight+between(CONFIG.perchMin,CONFIG.perchMax,this.random);
  }
  position(now,instant){
-  const end=perches[this.target];
+  const end=(this.perches||perches)[this.target];
   if(!this.from||instant)return{x:end[0],y:end[1],flying:false};
   const fraction=smooth((now-this.started)/CONFIG.flight);
   return{
@@ -148,6 +149,11 @@ function mount(){
  const move=(el,x,y,extra='')=>el.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+') '+extra);
  const back=group('owl-simple-sky');svg.insertBefore(back,svg.querySelector('#kiln-side'));
  const sky=group('owl-sky-event',back),fireworks=group('owl-new-year-fireworks',back);
+ const witchUrl=window.ESTUFA_ASSETS?.witch||'./art/bruxinha.png';
+ const witchArt=new Image();
+ let witchReady=false;
+ witchArt.onload=()=>{witchReady=true;};
+ witchArt.src=witchUrl;
  for(const[x,y,color]of[[48,58,'#edd295'],[165,48,'#dfb0cb'],[253,59,'#a6d0c1']]){
   const burst=make('g',{transform:'translate('+x+' '+y+')'},fireworks),rays=make('g',{},burst);
   for(let i=0;i<12;i++){const a=i*Math.PI/6;make('path',{d:'M'+(Math.cos(a)*5)+' '+(Math.sin(a)*5)+'l'+(Math.cos(a)*12)+' '+(Math.sin(a)*12),stroke:color,'stroke-width':1},rays);}
@@ -176,7 +182,8 @@ function mount(){
  const vultureBlink=vulture.querySelector('.vulture-blink');
  const vultureFallback=Array.from(vulture.children);
  const vultureSprite=make('svg',{width:48,height:48,x:-24,y:-42,overflow:'hidden','image-rendering':'pixelated'});
- const vultureAtlas=make('image',{href:'./urubu-sprites.png?v=1','image-rendering':'pixelated'});
+ const vultureUrl=window.ESTUFA_ASSETS?.vulture||'./urubu-sprites.png?v=1';
+ const vultureAtlas=make('image',{href:vultureUrl,'image-rendering':'pixelated'});
  vultureSprite.append(vultureAtlas);
  vulture.append(vultureSprite);
  show(vultureSprite,false);
@@ -191,7 +198,7 @@ function mount(){
   vultureSprite.setAttribute('viewBox',[0,0,vultureArt.naturalWidth/3,vultureArt.naturalHeight/2].join(' '));
   show(vultureSprite,true);
  };
- vultureArt.src='./urubu-sprites.png?v=1';
+ vultureArt.src=vultureUrl;
  function drawVultureSprite(now,pose,still){
   if(lastVultureX!==null&&pose.flying&&Math.abs(pose.x-lastVultureX)>.02){
    vultureDirection=pose.x>lastVultureX?1:-1;
@@ -256,6 +263,7 @@ function mount(){
  function draw(dt){
   const now=demo?.now??Date.now(),d=clock(now),ev=events(d);
   const night=demo?demo.night:svg.dataset.day?svg.dataset.day==='false':d.hour<6||d.hour>=18;
+  bird.perches=svg.dataset.illustrated?illustratedPerches:perches;
   const birdPose=bird.step(now,!night,demo?demo.weather:svg.dataset.weather,motion.matches);
   show(vulture,birdPose.visible);
   move(vulture,birdPose.x,birdPose.y);
@@ -279,32 +287,52 @@ function mount(){
     activeCycle=fruitCycle(d.serial,activeFruit);
    }
   }
-  let x=276,y=155,fly=false,tilt=0,headAngle=3*Math.sin(director.time/1100),caption='Corujinha descansando no galho';
+  const perchY=svg.dataset.illustrated?143:155;
+  let x=276,y=perchY,fly=false,tilt=0,headAngle=3*Math.sin(director.time/1100),caption='Corujinha descansando no galho';
   show(snack,false);show(hat,ev.some(e=>e.birthday));show(owl,v.state!=='away');
   if(v.state==='arrival'||v.state==='departure'){
-   const f=smooth(v.age/CONFIG.flight),target=v.state==='arrival'?[276,155]:[-30,75];
+   const f=smooth(v.age/CONFIG.flight),target=v.state==='arrival'?[276,perchY]:[-30,75];
    x=origin[0]+(target[0]-origin[0])*f;y=origin[1]+(target[1]-origin[1])*f-32*Math.sin(Math.PI*f);fly=true;caption=v.state==='arrival'?'Coruja chegando ao pôr do sol':'Coruja saindo ao nascer do sol';
   }
   if(v.state==='eat'){
    const at=fruits[activeFruit]?.getAttribute('transform')?.match(/translate\(([-.\d]+) ([-.\d]+)/),fx=at?+at[1]:283,fy=at?+at[2]:69;
-   if(p<.24){const f=smooth(p/.24);x=276+(fx-276)*f;y=155+(fy+20-155)*f;fly=true;}
-   else if(p<.42){const f=smooth((p-.24)/.18);x=fx+(276-fx)*f;y=fy+20+(155-fy-20)*f;fly=true;}
+   if(p<.24){const f=smooth(p/.24);x=276+(fx-276)*f;y=perchY+(fy+20-perchY)*f;fly=true;}
+   else if(p<.42){const f=smooth((p-.24)/.18);x=fx+(276-fx)*f;y=fy+20+(perchY-fy-20)*f;fly=true;}
    if(p>=.24){
     if(activeFruit!==null)picked[activeFruit]=activeCycle;
-    show(snack,p<.93);move(snack,8,-10+(p>.42?Math.sin(t*5)*.7:0));
+    show(snack,p<.93);move(snack,7,(svg.dataset.illustrated?-15:-10)+(p>.42?Math.sin(t*5)*.7:0));
     bite.setAttribute('width',String(12-Math.max(0,Math.min(4,Math.floor((p-.42)/.12)))*2.7));
     if(p>.42)headAngle=3*Math.sin(t*5);
    }
    caption='Corujinha comendo uma goiaba madura';
   }
-  if(motion.matches){x=276;y=155;fly=false;headAngle=0;}
+  if(motion.matches){x=276;y=perchY;fly=false;headAngle=0;}
+  if(v.state==='away'){x=-30;y=75;}
   position=[x,y];move(owl,x,y);pose.setAttribute('transform','rotate('+tilt+')');head?.setAttribute('transform','rotate('+headAngle+' 0 -18)');
   const shut=director.time%6900<170;pupils?.setAttribute('opacity',shut?'0':'1');blink?.setAttribute('opacity',shut?'1':'0');show(wings,fly&&!motion.matches);wings?.setAttribute('transform','scale(1 '+(.7+.4*Math.sin(director.time/50))+')');owl.setAttribute('aria-label',caption);
+  window.EstufaArt?.paintOwl(owl,{fly,age:v.age,time:director.time,state:v.state,shut,progress:p,x});
   fruits.forEach((fruit,i)=>show(fruit,picked[i]!==fruitCycle(d.serial,i)));
   const event=schedule.update(now,night);show(sky,!!event&&!motion.matches);
   if(event&&!motion.matches){
-   if(sky.dataset.kind!==event.kind){sky.dataset.kind=event.kind;sky.innerHTML=skyArt[event.kind];}
-   const f=event.fraction;if(event.kind==='meteor')move(sky,90+210*f,26+55*f);else move(sky,-25+450*f,64+5*Math.sin(f*Math.PI*2),'scale(.55)');sky.setAttribute('opacity',String(Math.min(1,f*10,(1-f)*10)));
+   const illustratedWitch=event.kind==='witch'&&witchReady;
+   const artwork=illustratedWitch?'witch-illustrated':event.kind;
+   if(sky.dataset.kind!==artwork){
+    sky.dataset.kind=artwork;
+    sky.replaceChildren();
+    if(illustratedWitch){
+     make('image',{href:witchUrl,x:-36,y:-23,width:72,height:46,'image-rendering':'pixelated','aria-hidden':'true'},sky);
+    }else{
+     sky.innerHTML=skyArt[event.kind];
+    }
+   }
+   const f=event.fraction;
+   if(event.kind==='meteor'){
+    move(sky,90+210*f,26+55*f);
+   }else{
+    const tilt=illustratedWitch?4*Math.sin(f*4*Math.PI):0;
+    move(sky,-25+450*f,64+5*Math.sin(f*Math.PI*2),'rotate('+tilt+') scale(.55)');
+   }
+   sky.setAttribute('opacity',String(Math.min(1,f*10,(1-f)*10)));
   }
   const newYear=ev.some(e=>e.id==='ano-novo'),phase=(director.time%CONFIG.fireworksInterval)/1000;
   show(fireworks,newYear&&night&&phase<7&&!motion.matches);
@@ -313,10 +341,10 @@ function mount(){
   }
   save();
  }
- function tick(now){frame=0;if(document.hidden)return;const dt=last?Math.min(100,now-last):0;last=now;acc+=dt;if(acc>=(motion.matches?250:40)){draw(acc);acc=0;}frame=requestAnimationFrame(tick);}
+ function tick(now){frame=0;if(document.hidden)return;const dt=last?Math.min(100,now-last):0;last=now;acc+=dt;if(acc>=(motion.matches?250:40)){if(demo)demo.now+=acc;draw(acc);acc=0;}frame=requestAnimationFrame(tick);}
  document.addEventListener('visibilitychange',()=>{if(frame)cancelAnimationFrame(frame);frame=0;last=0;acc=0;if(!document.hidden)frame=requestAnimationFrame(tick);});
  // Optional demonstration remains separate from real weather and equipment.
- if(new URLSearchParams(location.search).get('owlDemo')==='1'){
+ if(window.ESTUFA_PREVIEW||new URLSearchParams(location.search).get('owlDemo')==='1'){
   demo={now:Date.parse('2026-11-07T15:00:00-03:00'),night:false,weather:'clear'};
   picked.length=0;
   const panel=document.createElement('details');panel.innerHTML='<summary>Demonstração dos bichos da estufa</summary>';panel.style.cssText='padding:10px;background:#fffbed;color:#264333';panel.open=true;
@@ -335,7 +363,7 @@ function mount(){
   button('Chapéu e balões',()=>{demo.now=Date.parse('2026-11-06T21:00:00-03:00');demo.night=true;});
   button('Natal',()=>{demo.now=Date.parse('2026-12-25T21:00:00-03:00');demo.night=true;});
   button('Ano Novo',()=>{demo.now=Date.parse('2027-01-01T21:00:00-03:00');demo.night=true;director.time=0;});
-  svg.closest('.mission-art').after(panel);
+  if(!window.ESTUFA_PREVIEW)svg.closest('.mission-art').after(panel);
   window.CorujaDemo={director,schedule,set(options){Object.assign(demo,options);draw(0);},advance(ms){demo.now+=ms;draw(ms);}};
  }
  draw(0);frame=requestAnimationFrame(tick);
