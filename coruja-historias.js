@@ -174,6 +174,42 @@ function mount(){
  const vultureWings=vulture.querySelector('.vulture-wings');
  const vultureEyes=vulture.querySelector('.vulture-eyes');
  const vultureBlink=vulture.querySelector('.vulture-blink');
+ const vultureFallback=Array.from(vulture.children);
+ const vultureSprite=make('svg',{width:48,height:48,x:-24,y:-42,overflow:'hidden','image-rendering':'pixelated'});
+ const vultureAtlas=make('image',{href:'./urubu-sprites.png?v=1','image-rendering':'pixelated'});
+ vultureSprite.append(vultureAtlas);
+ vulture.append(vultureSprite);
+ show(vultureSprite,false);
+ const vultureArt=new Image();
+ let vultureFrame=-1;
+ let vultureDirection=1;
+ let lastVultureX=null;
+ vultureArt.onload=()=>{
+  vultureAtlas.setAttribute('width',vultureArt.naturalWidth);
+  vultureAtlas.setAttribute('height',vultureArt.naturalHeight);
+  vultureFallback.forEach(part=>part.setAttribute('visibility','hidden'));
+  vultureSprite.setAttribute('viewBox',[0,0,vultureArt.naturalWidth/3,vultureArt.naturalHeight/2].join(' '));
+  show(vultureSprite,true);
+ };
+ vultureArt.src='./urubu-sprites.png?v=1';
+ function drawVultureSprite(now,pose,still){
+  if(lastVultureX!==null&&pose.flying&&Math.abs(pose.x-lastVultureX)>.02){
+   vultureDirection=pose.x>lastVultureX?1:-1;
+  }
+  lastVultureX=pose.x;
+  if(!vultureArt.naturalWidth)return;
+  let next=0;
+  if(pose.flying&&!still)next=[3,4,5,4][Math.floor(now/120)%4];
+  else if(pose.drying)next=2;
+  else if(!still&&now%6700<160)next=1;
+  if(next!==vultureFrame){
+   vultureFrame=next;
+   const width=vultureArt.naturalWidth/3;
+   const height=vultureArt.naturalHeight/2;
+   vultureSprite.setAttribute('viewBox',[next%3*width,Math.floor(next/3)*height,width,height].join(' '));
+  }
+  vultureSprite.setAttribute('transform','scale('+vultureDirection+' 1)');
+ }
  const balloons=group('owl-birthday-balloons',decorations),ornaments=group('owl-festival-ornaments',decorations);
  const pose=make('g',{},owl);while(owl.firstChild!==pose)pose.append(owl.firstChild);
  const head=pose.querySelector('.owl-head'),pupils=pose.querySelector('.owl-pupils'),blink=pose.querySelector('.owl-blink'),wings=pose.lastElementChild;
@@ -227,6 +263,7 @@ function mount(){
   const eyesShut=now%6700<150;
   show(vultureEyes,!eyesShut);
   show(vultureBlink,eyesShut);
+  drawVultureSprite(now,birdPose,motion.matches);
   const vultureLabel=birdPose.drying?'Urubu secando as asas no telhado':birdPose.flying?'Urubu voando':birdPose.perch==='roof'?'Urubu pousado na estufa':'Urubu pousado na goiabeira';
   if(vulture.getAttribute('aria-label')!==vultureLabel)vulture.setAttribute('aria-label',vultureLabel);
   const sceneLabel=night?'Estufa solar com corujinha e goiabeira à noite.':'Estufa solar com urubu e goiabeira durante o dia.';
