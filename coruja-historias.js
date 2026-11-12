@@ -203,7 +203,7 @@ function mount(){
  const wetSprite=make('svg',{width:48,height:48,x:-24,y:-42,overflow:'hidden','image-rendering':'pixelated'},vulture);
  const wetAtlas=make('image',{href:wetUrl},wetSprite);
  const splash=make('g',{'aria-hidden':'true','pointer-events':'none'},vulture);
- const drops=Array.from({length:10},()=>make('rect',{width:1.3,height:1.3,fill:'#d7f2ff'},splash));
+ const drops=Array.from({length:10},()=>make('rect',{width:2.4,height:3,fill:'#e8fcff',stroke:'#487c90','stroke-width':.55},splash));
  show(wetSprite,false);
  show(splash,false);
  const wetArt=new Image();
@@ -228,16 +228,17 @@ function mount(){
   frontReady=true;
  };
  frontArt.src=frontUrl;
- function drawFrontVulture(now,pose,raining,still){
-  const canLook=pose.visible&&!pose.flying&&!pose.drying&&!raining;
+ function drawFrontVulture(now,pose,shaking,still){
+  const canLook=pose.visible&&!pose.flying&&!pose.drying;
   if(!canLook)frontPerchedAt=null;
   else if(frontPerchedAt===null||now<frontPerchedAt)frontPerchedAt=now;
-  const cycle=canLook?(now-frontPerchedAt)%24000:0;
-  const looking=canLook&&frontReady&&cycle>=2800&&cycle<6100;
+  const cycle=canLook?(now-frontPerchedAt)%16000:0;
+  const looking=canLook&&!shaking&&frontReady&&cycle>=2800&&cycle<8000;
   show(frontSprite,looking);
   if(looking){
    show(vultureSprite,false);
-   const blink=!still&&cycle>=4350&&cycle<4520;
+   show(wetSprite,false);
+   const blink=!still&&cycle>=5300&&cycle<5500;
    const width=frontArt.naturalWidth/2;
    frontSprite.setAttribute('viewBox',[blink?width:0,0,width,frontArt.naturalHeight].join(' '));
   }
@@ -250,22 +251,23 @@ function mount(){
   const useWet=wet&&wetReady;
   show(wetSprite,useWet);
   show(vultureSprite,!useWet&&!!vultureArt.naturalWidth);
-  const cycle=wet?(now-wetSince)%18000:0;
-  const shake=useWet&&!still&&cycle>=1000&&cycle<1850;
-  const elapsed=cycle-1000;
+  const cycle=wet?(now-wetSince)%12000:0;
+  const elapsed=cycle-750;
+  const shake=useWet&&elapsed>=0&&elapsed<1800;
   show(splash,shake);
   if(!useWet)return false;
-  const frame=shake?[1,2,3,2,3,1,0][Math.min(6,Math.floor(elapsed/120))]:0;
+  const shakeFrames=[1,2,3,2,3,2,3,1,0];
+  const frame=shake?(still?2:shakeFrames[Math.floor(elapsed/200)]):0;
   const width=wetArt.naturalWidth/2,height=wetArt.naturalHeight/2;
   wetSprite.setAttribute('viewBox',[frame%2*width,Math.floor(frame/2)*height,width,height].join(' '));
   wetSprite.setAttribute('transform','scale('+vultureDirection+' 1)');
   if(shake){
-   const progress=elapsed/850;
+   const progress=still?.45:elapsed/1800;
    drops.forEach((drop,i)=>{
     const side=i%2?-1:1;
-    drop.setAttribute('x',side*(4+(12+i%5*2)*progress));
+    drop.setAttribute('x',side*(8+(20+i%5*2)*progress));
     drop.setAttribute('y',-15-i%5*2-19*progress+31*progress*progress);
-    drop.setAttribute('opacity',1-progress);
+    drop.setAttribute('opacity',Math.min(1,(1-progress)*2));
    });
   }
   return shake;
@@ -345,7 +347,7 @@ function mount(){
   drawVultureSprite(now,birdPose,motion.matches);
   const raining=(demo?demo.weather:svg.dataset.weather)==='rain';
   const shaking=drawWetVulture(now,birdPose,raining,motion.matches);
-  const looking=drawFrontVulture(now,birdPose,raining,motion.matches);
+  const looking=drawFrontVulture(now,birdPose,shaking,motion.matches);
   const vultureLabel=shaking?'Urubu sacudindo a água das penas':looking?'Urubu olhando de frente':birdPose.drying?'Urubu secando as asas no telhado':birdPose.flying?'Urubu voando':birdPose.perch==='roof'?'Urubu pousado na estufa':'Urubu pousado na goiabeira';
   if(vulture.getAttribute('aria-label')!==vultureLabel)vulture.setAttribute('aria-label',vultureLabel);
   const sceneLabel=night?'Estufa solar com corujinha e goiabeira à noite.':'Estufa solar com urubu e goiabeira durante o dia.';

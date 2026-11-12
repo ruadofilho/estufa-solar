@@ -48,11 +48,12 @@ frog.innerHTML=
 svg.insertBefore(frog,clock);
 const frogSplash=node('g',{'aria-hidden':'true','pointer-events':'none'});
 svg.insertBefore(frogSplash,frog);
-const splashDrops=Array.from({length:12},()=>node('rect',{width:1.6,height:2.3,fill:'#d7f3ef'},frogSplash));
-const splashRipple=node('ellipse',{rx:3,ry:1,fill:'none',stroke:'#d7f3ef','stroke-width':.8},frogSplash);
+const splashDrops=Array.from({length:12},(_,i)=>node('rect',{width:i%3===0?3.2:2.4,height:i%3===0?4.2:3.3,fill:'#e8fcff',stroke:'#487c90','stroke-width':.6},frogSplash));
+const splashRipple=node('ellipse',{rx:3,ry:1,fill:'none',stroke:'#e8fcff','stroke-width':1.5},frogSplash);
 const frogReducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 // Rain falls in front of the garden and equipment, behind the clock.
 svg.insertBefore(precipitation,clock);
+svg.insertBefore(frogSplash,clock);
 let rainStarted=null,rainStopped=null,previousRain=false;
 function drawRainVisitors(now){
  const raining=svg.dataset.weather==='rain';
@@ -73,18 +74,19 @@ function drawRainVisitors(now){
   while(phase>=stops[leg][2]+hopMs){phase-=stops[leg][2]+hopMs;leg++;}
   const from=stops[leg],to=stops[(leg+1)%stops.length];
   const landed=(leg>0||rainAge>=cycleMs)&&[247,359,62].includes(from[0]);
-  const splashFraction=phase/650;
-  if(landed&&splashFraction<1&&water>.01&&!frogReducedMotion.matches){
+  const splashFraction=phase/1050;
+  if(landed&&splashFraction<1&&water>.01){
    frogSplash.style.display='';
-   const f=splashFraction;
+   const f=frogReducedMotion.matches?.4:splashFraction;
+   const spread=.18+.82*f;
    splashDrops.forEach((drop,i)=>{
-    const angle=Math.PI*(.06+.88*i/11),speed=22+(i%3)*7;
-    drop.setAttribute('x',from[0]+Math.cos(angle)*speed*f);
-    drop.setAttribute('y',from[1]+3-Math.sin(angle)*28*f+24*f*f);
-    drop.setAttribute('opacity',String(1-f));
+    const angle=Math.PI*(.06+.88*i/11),speed=30+(i%3)*8;
+    drop.setAttribute('x',from[0]+Math.cos(angle)*speed*spread);
+    drop.setAttribute('y',from[1]+3-Math.sin(angle)*44*spread+31*spread*spread);
+    drop.setAttribute('opacity',String(Math.min(1,(1-f)*2)));
    });
    splashRipple.setAttribute('cx',from[0]);splashRipple.setAttribute('cy',from[1]+5);
-   splashRipple.setAttribute('rx',3+16*f);splashRipple.setAttribute('ry',1+2*f);
+   splashRipple.setAttribute('rx',6+18*f);splashRipple.setAttribute('ry',2+3*f);
    splashRipple.setAttribute('opacity',String(1-f));
   }
   const hopping=phase>=from[2];
