@@ -203,16 +203,51 @@ svg.insertBefore(owl,clock);
 owl.innerHTML='<path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-6-10H6v9H-6z" fill="#efccbd"/><path d="M-7-1h5v3h-5zm9 0h5v3H2z" fill="#efb86c"/><g class="owl-head"><path d="M-10-15v-11l6 4h8l6-4v11l-3 3H-7z" fill="#c79cb8"/><path d="M-8-21H8v7H-8z" fill="#fff4d8"/><path class="owl-pupils" d="M-6-20h2v4h-2zm10 0h2v4H4z" fill="#344057"/><path class="owl-blink" d="M-7-18h5v1h-5zm9 0h5v1H2z" fill="#344057"/><path d="M-2-15h4l-2 3z" fill="#eaa658"/></g>';
 const pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
 const wings=node('path',{d:'M-10-13l-16-8v7l16 9zm20 0l16-8v7l-16 9z',fill:'#ab82a9'},owl);
+// Each route enters at the upper hatch and returns through the boards to the lower hatch.
+const airflow=node('g',{class:'kiln-airflow',visibility:'hidden','shape-rendering':'geometricPrecision'},wind);
+wind.removeAttribute('clip-path');
+const motion=matchMedia('(prefers-reduced-motion: reduce)');
+const airflowStyle=document.createElement('style');
+airflowStyle.textContent='#kiln-wind{opacity:.9}.mission-art svg:not([data-hatches="ABRIR"]) .kiln-airflow{visibility:hidden}';
+document.head.append(airflowStyle);
 const routes=[
- 'M116 108Q121 95 131 104L175 129Q185 134 182 150Q173 162 152 149L121 132Q111 126 116 108Z',
- 'M116 148Q130 135 147 145L176 157Q186 163 183 179Q179 189 162 186L125 178Q113 173 116 148Z',
- 'M120 187L165 192Q181 193 182 177L181 139Q180 130 169 134L128 146Q115 150 115 165Q114 178 120 187Z'
-].map(d=>{const p=node('path',{d,fill:'none',stroke:'none'},wind);return {p,len:p.getTotalLength()};});
-const gusts=Array.from({length:7},(_,i)=>{
- const g=node('g',{class:'air-gust',fill:'none',stroke:i%2?'#26758a':'#3d879a','stroke-width':1.6,'stroke-linecap':'round'},wind);
- node('path',{d:'M-6-2h8q3 0 3-2m-13 5h10m-7 3h8l2-2'},g);
+ ['M90 108H112C126 108 135 119 145 131S166 147 169 158C173 176 149 181 127 181H93',
+  'M68 117H86C104 117 116 123 132 134S169 145 176 157C184 177 154 178 128 178H69'],
+ ['M90 108H110C127 108 133 119 143 134S157 151 152 163C147 174 129 181 109 181H93',
+  'M68 117H86C104 117 114 125 123 136S145 148 147 159C151 174 128 178 109 178H69']
+].map(([base,illustrated])=>({base,illustrated,p:node('path',{d:base,fill:'none',stroke:'none'},airflow),len:0}));
+let illustratedAirflow;
+const gusts=Array.from({length:8},()=>{
+ const g=node('g',{fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},airflow);
+ const d='M-6 0H5M1-3.5L5 0L1 3.5';
+ node('path',{d,stroke:'#234a54','stroke-width':3.4},g);
+ node('path',{d,stroke:'#8be4ff','stroke-width':1.8},g);
  return g;
 });
+function drawAirflow(now){
+ const open=svg.dataset.hatches==='ABRIR';
+ airflow.setAttribute('visibility',open?'visible':'hidden');
+ if(!open)return;
+ const illustrated=svg.dataset.illustrated==='true';
+ if(illustrated!==illustratedAirflow){
+  illustratedAirflow=illustrated;
+  for(const route of routes){
+   route.p.setAttribute('d',illustrated?route.illustrated:route.base);
+   route.len=route.p.getTotalLength();
+  }
+ }
+ const period=wind.classList.contains('coolers-active')?4400:6800;
+ gusts.forEach((g,i)=>{
+  const {p,len}=routes[i%routes.length];
+  const offset=(i+.5)/gusts.length;
+  const phase=motion.matches?offset:(now/period+offset)%1;
+  const at=phase*len,a=p.getPointAtLength(at);
+  const before=p.getPointAtLength(Math.max(0,at-1)),after=p.getPointAtLength(Math.min(len,at+1));
+  const angle=Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI;
+  g.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+angle+')');
+  g.setAttribute('opacity',Math.min(1,phase*18,(1-phase)*18).toFixed(2));
+ });
+}
 window.EstufaArt?.mount(svg,sky,garden);
 let frame=0,last=-Infinity;
 function draw(now){
@@ -240,13 +275,7 @@ function draw(now){
   g.setAttribute('transform','translate('+(x0+9*Math.sin(u*.73+i)).toFixed(2)+' '+(180+(i%3)*9+8*Math.cos(u*.82+i*2)).toFixed(2)+')');
   g.setAttribute('opacity',Math.pow(Math.max(0,Math.sin(u*(1.05+i*.08)+i*2.1)),4).toFixed(2));
  });
- if(wind.classList.contains('coolers-active'))gusts.forEach((g,i)=>{
-  const {p,len}=routes[i%routes.length];
-  const phase=(now/1000*(.20+(i%3)*.035)+(i+1)/7)%1,at=phase*len;
-  const a=p.getPointAtLength(at),b=p.getPointAtLength((at+.9)%len),angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
-  g.setAttribute('transform','translate('+a.x+' '+a.y+') rotate('+angle+')');
-  g.setAttribute('opacity',(.56+.36*Math.sin(phase*2*Math.PI+i)).toFixed(2));
- });
+ drawAirflow(now);
 }
 function tick(time){frame=0;if(document.hidden)return;if(time-last>=32){last=time;draw(Date.now());}frame=requestAnimationFrame(tick);}
 function sync(){if(document.hidden){if(frame)cancelAnimationFrame(frame);frame=0;return;}draw(Date.now());if(!frame)frame=requestAnimationFrame(tick);}
