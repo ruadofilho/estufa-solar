@@ -19,7 +19,7 @@ function frogFrame({hopping,fraction,phase,rest}){
 const api={owlFrame,frogFrame};
 if(typeof window==='undefined')return api;
 const NS='http://www.w3.org/2000/svg',source=window.ESTUFA_ASSETS||{};
-const urls={garden:source.garden||'./art/estufa.webp',owl:source.owl||'./art/coruja.png',frog:source.frog||'./art/sapinho.png'};
+const urls={garden:source.garden||'./estufa.webp',owl:source.owl||'./coruja.png',frog:source.frog||'./sapinho.png'};
 const states=new WeakMap(),sprites=new WeakMap(),loaded={};
 function node(tag,attrs={},parent){const el=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);parent?.append(el);return el;}
 for(const[id,url]of Object.entries(urls)){const img=new Image();img.onload=()=>{loaded[id]={w:img.naturalWidth,h:img.naturalHeight};};img.src=url;}

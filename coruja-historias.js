@@ -149,7 +149,7 @@ function mount(){
  const move=(el,x,y,extra='')=>el.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+') '+extra);
  const back=group('owl-simple-sky');svg.insertBefore(back,svg.querySelector('#kiln-side'));
  const sky=group('owl-sky-event',back),fireworks=group('owl-new-year-fireworks',back);
- const witchUrl=window.ESTUFA_ASSETS?.witch||'./art/bruxinha.png';
+ const witchUrl=window.ESTUFA_ASSETS?.witch||'./bruxinha.png';
  const witchArt=new Image();
  let witchReady=false;
  witchArt.onload=()=>{witchReady=true;};
