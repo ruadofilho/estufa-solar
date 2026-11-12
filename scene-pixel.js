@@ -228,16 +228,6 @@
     new MutationObserver(decorateTree).observe(garden, { childList: true });
   }
 
-  const esp = scene.querySelector('#scene-esp');
-  if (esp) {
-    add(esp, `
-      <path fill="#a9d2ac" d="M320 135h37v2h-34v35h-3z"/>
-      <path fill="none" stroke="#487d69" stroke-width="1.5" d="M323 140h4v5m-4 7h4m-3 12v5h10m13-3v5h8v-7m-1-22h4v8h-4"/>
-      <path fill="#c5d0ba" d="M332 144h15v2h-15zm0 13h2v2h-2zm13 0h2v2h-2z"/>
-      <path fill="#435960" d="M334 148h13v7h-13z"/>
-      <path fill="#f6c66d" d="M323 139h2v2h-2zm30 1h3v2h-3zm2 17h3v2h-3zm-24 14h3v2h-3z"/>
-    `, esp.querySelector('.esp-signal'));
-  }
   const clock = scene.querySelector('.scene-clock');
   if (clock) {
     add(clock, `

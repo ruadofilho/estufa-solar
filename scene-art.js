@@ -62,7 +62,6 @@ api.light=(svg,now)=>{
   }
   s.wood?.setAttribute('transform','translate(-87 4) scale(1.53 1)');
   svg.querySelector('#kiln-air-clip path')?.setAttribute('d','M86 114L194 150V195H86Z');
-  const signal=svg.querySelector('#scene-esp');signal?.setAttribute('transform','translate(55 117) scale(.5)');
   const moon=svg.querySelector('.sky-moon');moon?.setAttribute('d','M65 23a13 13 0 1 0 3 25 14 14 0 0 1-3-25z');
  }
  const showLoad=!window.ESTUFA_PREVIEW||svg.dataset.previewLoad==='true';

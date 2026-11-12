@@ -226,10 +226,12 @@ function draw(now){
   drop.setAttribute('transform','translate('+x+' '+y+')');
  });
  drawRainVisitors(now);
- const wifi=svg.querySelector('#scene-esp .esp-signal');
+ const indicator=svg.querySelector('#scene-esp');
+ const wifi=indicator?.querySelector('.esp-signal');
  if(wifi){
-  const connected=svg.querySelector('#scene-esp').classList.contains('esp-online');
-  wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
+  const connected=indicator.classList.contains('esp-online');
+  const label=connected?'ESP32 conectada':'ESP32 sem conexão';
+  if(indicator.getAttribute('aria-label')!==label)indicator.setAttribute('aria-label',label);
  }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
  fireflies.forEach((g,i)=>{
