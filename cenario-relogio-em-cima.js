@@ -154,9 +154,6 @@ airflowStyle.textContent=`
  .mission-art svg[data-hatches="ABRIR"] #kiln-wind{display:inline;opacity:.95}
  .mission-art svg:not([data-hatches="ABRIR"]) #kiln-wind{display:none}
  @media(max-width:600px){.kiln-airflow .air-outline{stroke-width:5}.kiln-airflow .air-core{stroke-width:2.9}}
- @keyframes shepherd-wag{from{transform:rotate(-18deg)}to{transform:rotate(25deg)}}
- .shepherd-tail{transform-origin:0 0;animation:shepherd-wag .34s ease-in-out infinite alternate}
- @media(prefers-reduced-motion:reduce){.shepherd-tail{animation:none}}
 `;
 document.head.append(airflowStyle);
 const routes=[
@@ -197,19 +194,6 @@ function drawAirflow(now){
   g.setAttribute('opacity',Math.min(1,phase*18,(1-phase)*18).toFixed(2));
  });
 }
-const shepherd=node('g',{role:'img','aria-label':'Pastor-alemão sentado abanando o rabo',transform:'translate(361 207)'});
-svg.insertBefore(shepherd,precipitation);
-const tailMount=node('g',{transform:'translate(9 -9)'},shepherd);
-const tail=node('g',{class:'shepherd-tail'},tailMount);
-node('path',{fill:'#352725',d:'M-2 0H4V-1H9V-3H13V-5H16V-2H15V1H13V3H9V5H3L-2 3Z'},tail);
-node('path',{fill:'#9c6238',d:'M1 2H6V1H10V-1H13V1H11V3H8V4H2Z'},tail);
-const shepherdUrl=window.ESTUFA_ASSETS?.shepherd||'./pastor-alemao.png';
-const shepherdImage=node('image',{href:shepherdUrl,x:-21,y:-43,width:42,height:44},shepherd);
-shepherdImage.setAttributeNS('http://www.w3.org/1999/xlink','xlink:href',shepherdUrl);
-shepherd.setAttribute('visibility','hidden');
-const shepherdArt=new Image();
-shepherdArt.onload=()=>shepherd.removeAttribute('visibility');
-shepherdArt.src=shepherdUrl;
 let frame=0,last=-Infinity;
 const offstage=[-30,44],branch=[276,155],roof=[107,80];
 const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
