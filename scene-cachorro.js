@@ -21,6 +21,14 @@
   dog.insertAdjacentHTML('beforeend','<path fill="#53443c" d="M-10-13v-5h3v-8h3v3h3v-2h3v8h3v5h4v4h3V0H-9v-6h2v-7z"/><path fill="#ad8058" d="M-8-15h1v-3h5v4h4v4h-2V0h-8v-3h2v-9h-2zm12 7h4v3h2v5H2v-2h2z"/><path fill="#d5ac7a" d="M-7-12h5v4h-2v6h-2v-7h-1zM-5-2h4v2h-4z"/><path fill="#e4bc89" d="M-7-20h2v5h-2z"/><path fill="#fcf0ca" d="M-7-17h3v2h-3z"/><path fill="#363632" d="M-7-17h1v2h-1zm-4 4h3v2h-3z"/><path fill="#413633" d="M-8-10h5v1h-5z"/>');
   const bark = add('path', {d:'M-13-16h-4v-2h-3v-2m7 7h-7m7 3h-4v2h-3',stroke:'#f2d5a1','stroke-width':2,fill:'none'}, dog);
   const eyes = add('path', {d:'M-5-13h3v1h-3zm6 0h3v1H1z',fill:'#d5ac7a'}, house);
+  const walker = add('g', { 'aria-hidden':'true' }, yard);
+  const legs = [[-7,'#85634c'],[8,'#85634c'],[-8,'#d5ac7a'],[7,'#ad8058']].map(([x,fill])=>{
+    const joint = add('g',{transform:'translate('+x+' -7)'},walker);
+    const leg = add('path',{fill},joint);
+    return leg;
+  });
+  walker.insertAdjacentHTML('beforeend','<path fill="#53443c" d="M-13-9v-6h3v-8h3v3h3v-2h2v7h4v2h11v-2h4v-2h3v2h-2v3h-4v5H-9v-2z"/><path fill="#ad8058" d="M-11-12h3v-5h4v4h4v4h12v2H-9v-3h-2z"/><path fill="#d5ac7a" d="M-9-15h3v2h-3z"/><path fill="#363632" d="M-9-15h1v1h-1zm-5 3h3v2h-3z"/>');
+  const steps = ['M-1-3h3v6h1v4h-3V4h-1z','M-1-3h3v4h2v4h-3V3h-2z','M-1-3h3v5H1v5h-3V3h1z','M-1-3h3v5H0v3h-3V1h2z'];
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   let daytime, changed = 0, barkUntil = 0, frame = 0;
   let previousCoolers = window.FabricaSceneTelemetry?.status === 'online'
@@ -77,9 +85,14 @@
     const walking = progress < 1;
     const barking = !day && now < barkUntil;
     const x = walking ? (day ? 368-37*progress : 331+37*progress) : day ? 331 : 356;
-    const hop = walking ? Math.round(Math.abs(Math.sin(progress*5*Math.PI))*2) : 0;
-    dog.style.display = day || walking || barking ? '' : 'none';
-    dog.setAttribute('transform','translate('+Math.round(x)+' '+(201-hop)+') scale('+(walking&&!day?-1:1)+' 1)');
+    walker.style.display = walking ? '' : 'none';
+    if (walking) {
+      walker.setAttribute('transform','translate('+Math.round(x)+' 201) scale('+(day?1:-1)+' 1)');
+      const step = Math.floor((now-changed)/105);
+      legs.forEach((leg,i)=>leg.setAttribute('d',steps[(step+[0,2,2,0][i])%4]));
+    }
+    dog.style.display = !walking && (day || barking) ? '' : 'none';
+    dog.setAttribute('transform','translate('+x+' 201)');
     const wag = !motion.matches && Math.floor(now/165)%2;
     tail.setAttribute('d',wag ? 'M7-4h5v-2h4v-3h3v4h-2v3h-4v2H8z' : 'M7-4h5v2h7v2H9z');
     bark.style.display = barking ? '' : 'none';

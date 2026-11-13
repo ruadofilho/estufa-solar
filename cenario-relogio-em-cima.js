@@ -153,7 +153,9 @@ const airflowStyle=document.createElement('style');
 airflowStyle.textContent=`
  .mission-art svg[data-hatches="ABRIR"] #kiln-wind{display:inline;opacity:.95}
  .mission-art svg:not([data-hatches="ABRIR"]) #kiln-wind{display:none}
- @media(max-width:600px){.kiln-airflow .air-outline{stroke-width:5}.kiln-airflow .air-core{stroke-width:2.9}}
+ #kiln-side > .hatch-air-arrow,#kiln-side > path[d^="M91 108"]{display:none}
+ #kiln-wind.coolers-active .air-core{stroke:#c9f4ee}
+ @media(max-width:600px){.kiln-airflow .air-outline{stroke-width:3.6}.kiln-airflow .air-core{stroke-width:2}}
 `;
 document.head.append(airflowStyle);
 const routes=[
@@ -163,11 +165,11 @@ const routes=[
   'M68 117H86C104 117 114 125 123 136S145 148 147 159C151 174 128 178 109 178H69']
 ].map(([base,illustrated])=>({base,illustrated,p:node('path',{d:base,fill:'none',stroke:'none'},airflow),len:0}));
 let illustratedAirflow;
-const gusts=Array.from({length:8},()=>{
+const gusts=Array.from({length:6},()=>{
  const g=node('g',{fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},airflow);
- const d='M-6 0H5M1-3.5L5 0L1 3.5';
- node('path',{d,class:'air-outline',stroke:'#234a54','stroke-width':3.4},g);
- node('path',{d,class:'air-core',stroke:'#8be4ff','stroke-width':1.8},g);
+ const d='M-9-4H2l2-1v-2L2-8H0M-11 0H7l2-1v-2L7-4M-7 4H3l2 1v2L3 8H1';
+ node('path',{d,class:'air-outline',stroke:'#395d65','stroke-width':3},g);
+ node('path',{d,class:'air-core',stroke:'#9edddd','stroke-width':1.5},g);
  return g;
 });
 function drawAirflow(now){
