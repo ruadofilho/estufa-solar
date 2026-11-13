@@ -151,7 +151,7 @@ wind.removeAttribute('clip-path');
 const motion=matchMedia('(prefers-reduced-motion: reduce)');
 const airflowStyle=document.createElement('style');
 airflowStyle.textContent=`
- .mission-art svg[data-hatches="ABRIR"] #kiln-wind{display:inline;opacity:.95}
+ .mission-art svg[data-hatches="ABRIR"] #kiln-wind.coolers-active{display:inline;opacity:.95}
  .mission-art svg:not([data-hatches="ABRIR"]) #kiln-wind{display:none}
  #kiln-side > .hatch-air-arrow,#kiln-side > path[d^="M91 108"]{display:none}
  #kiln-wind.coolers-active .air-core{stroke:#c9f4ee}
@@ -173,7 +173,7 @@ const gusts=Array.from({length:6},()=>{
  return g;
 });
 function drawAirflow(now){
- const open=svg.dataset.hatches==='ABRIR';
+ const open=svg.dataset.hatches==='ABRIR'&&wind.classList.contains('coolers-active');
  airflow.setAttribute('visibility',open?'visible':'hidden');
  if(!open)return;
  const illustrated=svg.dataset.illustrated==='true';
@@ -184,7 +184,7 @@ function drawAirflow(now){
    route.len=route.p.getTotalLength();
   }
  }
- const period=wind.classList.contains('coolers-active')?4400:6800;
+ const period=4400;
  gusts.forEach((g,i)=>{
   const {p,len}=routes[i%routes.length];
   const offset=(i+.5)/gusts.length;
