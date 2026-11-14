@@ -149,6 +149,7 @@ const wings=node('path',{d:'M-10-13l-16-8v7l16 9zm20 0l16-8v7l-16 9z',fill:'#ab8
 const airflow=node('g',{class:'kiln-airflow',visibility:'hidden','shape-rendering':'geometricPrecision'},wind);
 wind.removeAttribute('clip-path');
 const motion=matchMedia('(prefers-reduced-motion: reduce)');
+
 const airflowStyle=document.createElement('style');
 airflowStyle.textContent=`
  .mission-art svg[data-hatches="ABRIR"] #kiln-wind.coolers-active{display:inline;opacity:.95}
@@ -188,7 +189,7 @@ function drawAirflow(now){
  gusts.forEach((g,i)=>{
   const {p,len}=routes[i%routes.length];
   const offset=(i+.5)/gusts.length;
-  const phase=motion.matches?offset:(now/period+offset)%1;
+  const phase=(now/period+offset)%1;
   const at=phase*len,a=p.getPointAtLength(at);
   const before=p.getPointAtLength(Math.max(0,at-1)),after=p.getPointAtLength(Math.min(len,at+1));
   const angle=Math.atan2(after.y-before.y,after.x-before.x)*180/Math.PI;
