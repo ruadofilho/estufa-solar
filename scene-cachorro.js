@@ -16,7 +16,7 @@
   const house = add('g', { transform:'translate(358 201)' }, yard);
   house.innerHTML = '<path fill="#4d4036" d="M-20 0v-24l12-15h21l16 15V0z"/><path fill="#906b50" d="M-1-23h27v21H-1z"/><path fill="#ad805e" d="M-19-23l11-13L1-23V-2h-20z"/><path fill="#765740" d="M1-18h25v2H1zm0 7h25v2H1zm0 7h25v2H1z"/><path fill="#77635b" d="M-8-39h22l16 15H2z"/><path fill="#66534a" d="M-21-25l12-15h3L5-24H1L-8-35l-10 13h-3zM3-24h27v3H3z"/><path fill="#493d35" d="M-17-2v-18h3v-4h9v4h3v18z"/><path fill="#76604b" d="M-19-2h19v2h-19z"/>';
 
-  const dog = add('g', {transform:'translate(331 201)'}, yard);
+  const dog = add('g', {'data-dog-pose':'sit',transform:'translate(331 201)'}, yard);
   const tail = add('path', {fill:'#544741'}, dog);
   dog.insertAdjacentHTML('beforeend','<path fill="#53443c" d="M-10-13v-5h3v-8h3v3h3v-2h3v8h3v5h4v4h3V0H-9v-6h2v-7z"/><path fill="#ad8058" d="M-8-15h1v-3h5v4h4v4h-2V0h-8v-3h2v-9h-2zm12 7h4v3h2v5H2v-2h2z"/><path fill="#d5ac7a" d="M-7-12h5v4h-2v6h-2v-7h-1zM-5-2h4v2h-4z"/><path fill="#e4bc89" d="M-7-20h2v5h-2z"/><path fill="#fcf0ca" d="M-7-17h3v2h-3z"/><path fill="#363632" d="M-7-17h1v2h-1zm-4 4h3v2h-3z"/><path fill="#413633" d="M-8-10h5v1h-5z"/>');
   const bark = add('path', {d:'M-13-16h-4v-2h-3v-2m7 7h-7m7 3h-4v2h-3',stroke:'#f2d5a1','stroke-width':2,fill:'none'}, dog);
@@ -40,9 +40,21 @@
   },water));
   const rainInterval = 180000, visitDuration = 9800;
   let nextPuddle, puddleStart;
-  const barkInterval = 10000;
-  const barkSpacing = 270;
-  let daytime, changed = 0, frame = 0;
+  const barkSpacing = 550;
+  for (const [pose,x,y] of [[dog,-4,-24],[walker,-7,-21],[drinking,-14,-11]]) {
+    const partyHat = add('g',{class:'dog-party-hat','aria-hidden':'true',transform:'translate('+x+' '+y+')'},pose);
+    partyHat.innerHTML = '<path fill="#744d66" d="M-6 0h12L1-12h-2z"/><path fill="#d889a1" d="M-4-1h8L0-10z"/><path fill="#efcd82" d="M-5-3h10v2H-5zm3-11h4v3h-4z"/>';
+  }
+  const stops = [[331,'rest'],[286,'mark'],[225,'rest'],[167,'walk'],[91,'rest'],[28,'rest'],[17,'rest'],[110,'walk'],[234,'rest'],[325,'rest']];
+  let frame = 0, dogX, walkFrom, walkTarget, walkStart = 0, walkDuration = 0;
+  let nextStroll = 0, stop = 0, wasDay, wasVisiting = false;
+  const activity = add('g', {'aria-hidden':'true'},yard);
+  add('path',{fill:'none',stroke:'#d7bd77','stroke-width':1,d:'M11-5q4 0 5 5'},activity);
+  function markTree(x,y) {
+    drawWalk(x,y,-1,0);
+    legs[3].setAttribute('d','M-1-3h4v3h3v3H2V1h-3z');
+    activity.setAttribute('transform','translate('+x+' '+y+')');
+  }
   let barkCycleStart, lastBark = -1;
   let coolersOn = window.FabricaSceneTelemetry?.status === 'online'
     && window.FabricaSceneTelemetry.coolers === true;
@@ -89,10 +101,8 @@
       lastBark = -1;
     }
     const elapsed = now - barkCycleStart;
-    const phase = elapsed % barkInterval;
-    const pulse = Math.floor(phase / barkSpacing);
-    if (pulse >= 3 || phase % barkSpacing >= 165) return false;
-    const barkNumber = Math.floor(elapsed / barkInterval) * 3 + pulse;
+    const barkNumber = Math.floor(elapsed / barkSpacing);
+    if (elapsed % barkSpacing >= 165) return false;
     if (lastBark !== barkNumber) {
       lastBark = barkNumber;
       playBark();
@@ -170,26 +180,50 @@
   function draw(now) {
     frame = 0;
     const day = scene.dataset.day !== 'false';
-    if (daytime === undefined) changed = now - 1800;
-    else if (day !== daytime) changed = now;
-    daytime = day;
-    const progress = Math.max(0,Math.min(1,(now-changed)/1800));
-    const walking = progress < 1;
+    const shelter = scene.dataset.owlShelter === 'true';
+    const alert = !day && coolersOn;
     const age = puddleTime(now,scene.dataset.weather==='rain');
-    const visiting = age >= 0 && age < visitDuration+(day?0:1600);
-    const barking = drawBarks(now, !day && !walking && coolersOn && !document.hidden);
-    const x = walking ? (day ? 358-27*progress : 331+27*progress) : day ? 331 : 356;
+    const visiting = !shelter && !alert && age >= 0 && age < visitDuration+(day?0:1600);
+    if (dogX === undefined || wasVisiting&&!visiting) {
+      dogX = walkFrom = walkTarget = day ? 331 : 358;
+      walkDuration = 0;
+      nextStroll = now+12000;
+    }
+    if (day !== wasDay) nextStroll = now+12000;
+    wasDay = day;
+    wasVisiting = visiting;
+    if (day && !shelter && !visiting && now >= nextStroll) {
+      stop = (stop+1)%stops.length;
+      nextStroll = now+Math.abs(stops[stop][0]-dogX)*32+(stops[stop][1]==='walk'?500:4500);
+    }
+    const target = shelter ? 358 : day ? stops[stop][0] : alert ? 331 : 358;
+    if (target !== walkTarget) {
+      walkFrom = dogX;
+      walkTarget = target;
+      walkStart = now;
+      walkDuration = Math.max(250,Math.abs(target-dogX)*32);
+    }
+    const progress = walkDuration ? Math.min(1,(now-walkStart)/walkDuration) : 1;
+    const walking = progress < 1;
+    dogX = walkFrom+(walkTarget-walkFrom)*progress;
+    const barking = drawBarks(now, alert && !document.hidden);
+    const x = dogX;
+    const groundY = 201+(day&&!shelter&&x<275?Math.min(10,(275-x)/4):0);
+    const kind = stops[stop][1];
+    const acting = day && !shelter && !walking && !visiting && kind==='mark';
+    activity.style.display = acting ? '' : 'none';
     walker.style.display = walking ? '' : 'none';
     if (walking) {
-      drawWalk(x,201,day?1:-1,now-changed);
+      drawWalk(x,groundY,walkTarget<walkFrom?1:-1,now-walkStart);
     }
-    dog.style.display = !walking && (day || barking) ? '' : 'none';
-    dog.setAttribute('transform','translate('+x+' 201) scale(1.18)');
+    dog.style.display = !walking && !acting && !shelter && (day || alert) ? '' : 'none';
+    dog.setAttribute('transform','translate('+x+' '+groundY+') scale(1.18)');
     const wag = Math.floor(now/165)%2;
     tail.setAttribute('d',wag ? 'M7-4h5v-2h4v-3h3v4h-2v3h-4v2H8z' : 'M7-4h5v2h7v2H9z');
     bark.style.display = barking ? '' : 'none';
-    eyes.style.display = !day && !walking && !barking ? '' : 'none';
+    eyes.style.display = !walking && (shelter || !day && !alert) ? '' : 'none';
     drinking.style.display = water.style.display = 'none';
+    if (acting) markTree(x,groundY);
     if (visiting) {
       walker.style.display = dog.style.display = eyes.style.display = 'none';
       drawPuddleVisit(age,day);
@@ -203,6 +237,9 @@
     frame = document.hidden ? 0 : requestAnimationFrame(draw);
   });
   if (!document.hidden) frame = requestAnimationFrame(draw);
+  window.addEventListener('pageshow',()=>{
+    if (!frame && !document.hidden) frame = requestAnimationFrame(draw);
+  });
   if (window.ESTUFA_PREVIEW) document.getElementById('demo-puddle')?.addEventListener('click',()=>{
     scene.dataset.weather = 'rain';
     puddleStart = performance.now();

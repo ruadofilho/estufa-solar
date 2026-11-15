@@ -201,6 +201,7 @@ let frame=0,last=-Infinity;
 const offstage=[-30,44],branch=[276,155],roof=[107,80];
 const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
 let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
+let alertFlightStart=null,alertFlightOrigin=branch;
 function draw(now){
  drawGarden(now);
  updateDaylight(now);
@@ -217,31 +218,50 @@ function draw(now){
   wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
  }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
- const visiting=svg.dataset.day==='false';
- owlVisitStart=visiting?(owlVisitStart??now):null;
+ const night=svg.dataset.day==='false';
+ const shelter=svg.dataset.owlShelter==='true';
+ const coolerAlert=night&&!shelter&&wind.classList.contains('coolers-active');
+ if(coolerAlert&&alertFlightStart===null){
+  alertFlightStart=now;
+  alertFlightOrigin=owlPosition===offstage?branch:owlPosition;
+ }else if(!coolerAlert&&alertFlightStart!==null){
+  alertFlightStart=null;
+  owlTarget=null;
+ }
+ owlVisitStart=night?(owlVisitStart??now):null;
  const phase=(now-(owlVisitStart??now))%(branchMs+roofMs+2*flightMs);
- const target=visiting?(phase<branchMs+flightMs?branch:roof):offstage;
+ const target=night&&phase>=branchMs+flightMs?roof:branch;
  if(target!==owlTarget){
   owlOrigin=owlPosition;
   owlTarget=target;
   owlFlightStart=now;
  }
  const progress=Math.min(1,Math.max(0,(now-owlFlightStart)/flightMs));
- const flying=!motion.matches&&owlOrigin!==owlTarget&&progress<1;
+ const flying=!motion.matches&&(coolerAlert||owlOrigin!==owlTarget&&progress<1);
  owlPosition=flying?[
   owlOrigin[0]+(owlTarget[0]-owlOrigin[0])*progress,
   owlOrigin[1]+(owlTarget[1]-owlOrigin[1])*progress-38*Math.sin(Math.PI*progress)
  ]:owlTarget;
+ if(coolerAlert&&flying){
+  const elapsed=now-alertFlightStart;
+  const angle=elapsed/1800;
+  const blend=Math.min(1,elapsed/flightMs);
+  owlPosition=[
+   alertFlightOrigin[0]*(1-blend)+(202+79*Math.cos(angle))*blend,
+   alertFlightOrigin[1]*(1-blend)+(63+18*Math.sin(angle))*blend
+  ];
+ }
  const [x,y]=owlPosition;
- owl.style.display=flying||target!==offstage?'':'none';
+ owl.style.display=!shelter&&(flying||target!==offstage)?'':'none';
  owl.setAttribute('transform','translate('+x+' '+y+')');
  wings.style.display=flying?'':'none';
  wings.setAttribute('transform','scale(1 '+(.7+.45*Math.sin(now/37))+')');
- const label=flying
+ const asleep=!night&&!wet&&!shelter&&svg.dataset.owlDayVisit!=='true'&&!flying;
+ const label=asleep?'Coruja dormindo no galho':coolerAlert&&flying?'Coruja voando enquanto os coolers estão ligados':flying
   ?(target===offstage?'Coruja voando para longe':'Coruja chegando ao '+(target===branch?'galho':'telhado'))
   :(target===branch?'Coruja pousada no galho':'Coruja pousada no telhado');
  if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
- const shut=!motion.matches&&!flying&&now%6700<170;
+ const shut=asleep||!motion.matches&&!flying&&now%6700<170;
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
  fireflies.forEach((g,i)=>{
@@ -278,6 +298,7 @@ async function refreshWeather(){
    const snow=(code>=71&&code<=77)||code===85||code===86;
    const condition=code===0?"clear":code===1||code===2?"partly":code===3?"cloudy":code===45||code===48?"fog":snow?"snow":"rain";
    svg.dataset.weather=condition;
+   svg.dataset.weatherCode=String(code);
    svg.dataset.day=current.is_day===1?"true":"false";
    if(snow)weather="Neve";
   }
