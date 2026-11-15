@@ -23,6 +23,25 @@
   const sky = group(scene);
   const roof = scene.querySelector('#kiln-side');
   if (roof) scene.insertBefore(sky,roof);
+  const vultures = Array.from({length:2},()=>group(sky,
+    '<path fill="#262834" d="M-5-2h2v1h2v1h2v-1h2v-1h2v1H4v1H2v1H1v1h-2V1h-1V0h-2v-1h-1z"/>'));
+  let heatTint, hotScene, flames = [];
+  if (roof) {
+    hatsStyle.textContent += ' #kiln-side #kiln-heat,#kiln-side #kiln-devil{display:none}';
+    heatTint = group(roof,'<path fill="#ed403a" d="M110 89L188 130V197H110Z"/>');
+    roof.insertBefore(heatTint,roof.querySelector('#kiln-wood'));
+    hotScene = group(roof);
+    hotScene.setAttribute('clip-path','url(#kiln-air-clip)');
+    roof.insertBefore(hotScene,roof.querySelector('#kiln-wind'));
+    flames = [115,137,160,181].map(x=>group(hotScene,
+      '<g transform="translate('+x+' 197)"><path fill="#bb413c" d="M-6 0v-10h3v-8h3v7h3v-5h2v8h3v8z"/>'+
+      '<path fill="#ec8050" d="M-3 0v-6h2v-6h2v5h3v7z"/><path fill="#ffd08a" d="M-1 0v-5h3v5z"/></g>'));
+    group(hotScene,'<g transform="translate(175 157)"><path fill="#672f42" d="M-8-8v-8h2l4 4h5l4-4h2v8h2V5H-9V-5z"/>'+
+      '<path fill="#d9685c" d="M-6-9H7V1H-6zM-6 3H6v8H-6z"/><path fill="#ffe5ad" d="M-4-7h3v3h-3zm6 0h3v3H2z"/>'+
+      '<path fill="#493040" d="M-3-2h7v2h-7z"/><path stroke="#6e3943" stroke-width="1.5" d="M10 10v-20m-3-1v4h6v-4"/></g>');
+    show(heatTint,false);
+    show(hotScene,false);
+  }
   const clock = scene.querySelector('.scene-clock');
   if (clock) for (const layer of [party,foreground]) scene.insertBefore(layer,clock);
   const ribbons = group(scene);
@@ -177,10 +196,28 @@
     }
     scene.dataset.owlBirthday=String(event.birthday);
     const night=scene.dataset.day==='false';
+    vultures.forEach((bird,i)=>{
+      show(bird,!night);
+      const phase=reduce.matches?i:now/7200+i*1.1;
+      move(bird,155+i*47+24*Math.cos(phase),40+i*7+5*Math.sin(phase));
+    });
     const wet=scene.dataset.weather==='rain';
     const storm=wet&&Number(scene.dataset.weatherCode)>=95;
     scene.dataset.owlShelter=String(storm);
     const telem=window.FabricaSceneTelemetry;
+    if(hotScene){
+      const internal=telem?.airValid&&Number.isFinite(telem.airT)?telem.airT:0;
+      const hot=internal>50;
+      show(heatTint,hot);
+      show(hotScene,hot);
+      if(hot){
+        heatTint.setAttribute('opacity',Math.min(.62,.31+(internal-50)*.012));
+        flames.forEach((flame,i)=>{
+          const height=reduce.matches?1:.85+.17*Math.sin(now/155+i*1.8);
+          flame.setAttribute('transform','translate(0 '+(197*(1-height))+') scale(1 '+height+')');
+        });
+      }
+    }
     const external=telem?.externalValid&&Number.isFinite(telem.externalT)?telem.externalT:undefined;
     scene.dataset.owlDayVisit=String(external>35||wet);
     const flight=owl.getAttribute('aria-label')?.includes('voando')||owl.getAttribute('aria-label')?.includes('chegando');

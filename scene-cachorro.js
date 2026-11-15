@@ -22,13 +22,21 @@
   const bark = add('path', {d:'M-13-16h-4v-2h-3v-2m7 7h-7m7 3h-4v2h-3',stroke:'#f2d5a1','stroke-width':2,fill:'none'}, dog);
   const eyes = add('path', {d:'M-14-15h3v1h-3zm6 0h3v1h-3z',fill:'#d5ac7a'}, house);
   const walker = add('g', { 'aria-hidden':'true' }, yard);
-  const legs = [[-7,'#85634c'],[8,'#85634c'],[-8,'#d5ac7a'],[7,'#ad8058']].map(([x,fill])=>{
+  const legs = [[-6,'#85634c',false],[8,'#85634c',true],[-8,'#d5ac7a',false],[7,'#ad8058',true]].map(([x,fill,hind])=>{
     const joint = add('g',{transform:'translate('+x+' -7)'},walker);
-    const leg = add('path',{fill},joint);
-    return leg;
+    const shape = add('path',{fill},joint);
+    const paw = add('path',{fill:'#6f5140'},joint);
+    return {shape,paw,hind};
   });
   walker.insertAdjacentHTML('beforeend','<path fill="#53443c" d="M-13-9v-6h3v-8h3v3h3v-2h2v7h4v2h11v-2h4v-2h3v2h-2v3h-4v5H-9v-2z"/><path fill="#ad8058" d="M-11-12h3v-5h4v4h4v4h12v2H-9v-3h-2z"/><path fill="#d5ac7a" d="M-9-15h3v2h-3z"/><path fill="#363632" d="M-9-15h1v1h-1zm-5 3h3v2h-3z"/>');
-  const steps = ['M-1-3h3v6h1v4h-3V4h-1z','M-1-3h3v4h2v4h-3V3h-2z','M-1-3h3v5H1v5h-3V3h1z','M-1-3h3v5H0v3h-3V1h2z'];
+  function drawLeg({shape,paw,hind}, stride, lift) {
+    const knee = hind ? 2 : 0;
+    const ankle = 6-lift;
+    const jointY = Math.min(3,ankle-1);
+    shape.setAttribute('d','M-2-3h'+(hind?6:4)+'L'+(knee+1)+' '+jointY+
+      'L'+(stride+1)+' '+ankle+'h1v1h-4v-1L'+(knee-1)+' '+jointY+'z');
+    paw.setAttribute('d','M'+(stride-2)+' '+ankle+'h4v1h-4z');
+  }
   const drinking = add('g', {'aria-hidden':'true',transform:'translate(370 216) scale(1.18)'}, yard);
   drinking.innerHTML = '<path fill="#53443c" d="M-20-4v-3h3v-6h6v3l5-3H8v-2h4v-3h3v4h-2v3h-4v7H5v-4H-6v3h-9v1z"/><path fill="#ad8058" d="M-17-9h5v3h5v-4H8v3H3v7H0v-7h-6l-3 7h-4l3-6h-7z"/><path fill="#363632" d="M-20-5h3v2h-3zm5-4h2v1h-2z"/>';
   const tongue = add('path',{d:'M-19-3h3v3h-2v-2h-1z',fill:'#ce9a97'},drinking);
@@ -45,14 +53,15 @@
     const partyHat = add('g',{class:'dog-party-hat','aria-hidden':'true',transform:'translate('+x+' '+y+')'},pose);
     partyHat.innerHTML = '<path fill="#744d66" d="M-6 0h12L1-12h-2z"/><path fill="#d889a1" d="M-4-1h8L0-10z"/><path fill="#efcd82" d="M-5-3h10v2H-5zm3-11h4v3h-4z"/>';
   }
-  const stops = [[331,'rest'],[286,'mark'],[225,'rest'],[167,'walk'],[91,'rest'],[28,'rest'],[17,'rest'],[110,'walk'],[234,'rest'],[325,'rest']];
+  const stops = [[331,'rest'],[283,'mark'],[225,'rest'],[167,'walk'],[91,'rest'],[28,'rest'],[17,'rest'],[110,'walk'],[234,'rest'],[325,'rest']];
   let frame = 0, dogX, walkFrom, walkTarget, walkStart = 0, walkDuration = 0;
   let nextStroll = 0, stop = 0, wasDay, wasVisiting = false;
   const activity = add('g', {'aria-hidden':'true'},yard);
-  add('path',{fill:'none',stroke:'#d7bd77','stroke-width':1,d:'M11-5q4 0 5 5'},activity);
+  add('path',{fill:'none',stroke:'#d7bd77','stroke-width':1,d:'M10-7q5 0 8 5'},activity);
   function markTree(x,y) {
-    drawWalk(x,y,-1,0);
-    legs[3].setAttribute('d','M-1-3h4v3h3v3H2V1h-3z');
+    walker.style.display = '';
+    walker.setAttribute('transform','translate('+x+' '+y+') scale(1.18)');
+    legs.forEach((leg,i)=>drawLeg(leg,i===3?4:0,i===3?5:0));
     activity.setAttribute('transform','translate('+x+' '+y+')');
   }
   let barkCycleStart, lastBark = -1;
@@ -142,8 +151,13 @@
   function drawWalk(x, y, direction, age, jump = false) {
     walker.style.display = '';
     walker.setAttribute('transform','translate('+Math.round(x)+' '+Math.round(y)+') scale('+(direction*1.18)+' 1.18)');
-    const step = Math.floor(age/105);
-    legs.forEach((leg,i)=>leg.setAttribute('d',steps[jump ? (i<2?1:3) : (step+[0,2,2,0][i])%4]));
+    const cycle = age/420;
+    legs.forEach((leg,i)=>{
+      const phase = (cycle+[0,.5,.5,0][i])%1;
+      const stride = jump ? (leg.hind?3:-3) : Math.round(3*Math.cos(phase*2*Math.PI));
+      const lift = jump ? 3 : Math.round(3*Math.max(0,Math.sin(phase*2*Math.PI)));
+      drawLeg(leg,stride,lift);
+    });
   }
 
   function drawPuddleVisit(age, day) {
