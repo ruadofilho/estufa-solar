@@ -2,9 +2,6 @@
   const scene = document.querySelector('.mission-art svg');
   const owl = scene?.querySelector('#scene-owl');
   if (!owl) return;
-  const hatsStyle = document.createElement('style');
-  hatsStyle.textContent = '.dog-party-hat{display:none} svg[data-owl-birthday="true"] .dog-party-hat{display:inline}';
-  document.head.append(hatsStyle);
   const ns = 'http://www.w3.org/2000/svg';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const group = (parent, art = '') => {
@@ -27,7 +24,9 @@
     '<path fill="#262834" d="M-5-2h2v1h2v1h2v-1h2v-1h2v1H4v1H2v1H1v1h-2V1h-1V0h-2v-1h-1z"/>'));
   let heatTint;
   if (roof) {
-    hatsStyle.textContent += ' #kiln-side #kiln-heat,#kiln-side #kiln-devil{display:none}';
+    const style = document.createElement('style');
+    style.textContent = '#kiln-side #kiln-heat,#kiln-side #kiln-devil{display:none}';
+    document.head.append(style);
     heatTint = group(roof,'<path fill="#ed403a" d="M110 89L188 130V197H110Z"/>');
     roof.insertBefore(heatTint,roof.querySelector('#kiln-wood'));
     show(heatTint,false);
@@ -49,12 +48,12 @@
   const sweater = group(body,'<path fill="#759d9e" d="M-10-12h20v9h-20z"/><path fill="#c5dbc7" d="M-10-9h20v2h-20z"/>');
   const umbrellaWing = group(body,'<path fill="#8f6589" d="M8-13h5v2h4v-2h3v-3h4v6h-4v2h-5v2H9z"/>'+
     '<path fill="#c89db5" d="M9-12h4v2h4v-2h3v2h-2v2h-5v1H9z"/>');
-  const sleep = group(body,'<text x="11" y="-23" fill="#fff1d4" stroke="#524150" stroke-width="1.3" paint-order="stroke" font-size="8" font-family="monospace">Zzz</text>');
   const fruit = group(body,'<path d="M-4-3h8v2h2v5H3v2h-6V4h-3v-5h2z" fill="#d9c473"/><path d="M0-3v-2h3v2z" fill="#6c8c59"/>');
   const ice = group(body,'<path fill="#c79869" d="M-4 0h8L0 8z"/><path fill="#e4a8ad" d="M-5 0v-5h2v-2h6v2h2v5z"/>');
   move(ice,12,-9);
   const sheltered = group(foreground,'<path d="M-5-6h10v7H-5z" fill="#8e697f"/><path d="M-4-5h3v2h-3zm5 0h3v2H1z" fill="#ffe4a2"/>');
-  move(sheltered,347,183);
+  move(sheltered,303,178);
+  show(sheltered,false);
   const meteor = group(sky,'<path d="M-25-13l24 11" stroke="#ddd5ac" stroke-width="1"/><path d="M-4-3l4 2" stroke="#fff1be" stroke-width="3"/>');
   const witch = group(sky,'<path fill="#333049" d="M-8-5h13v2H-8zm2 7 6-6 5 5h4v3H-7zM-4-5l5-7 2 7z"/><path stroke="#856d66" d="M-12 5H14m-25-1v3h-5V4z"/>');
 
@@ -184,7 +183,6 @@
       if(fireworks)fireworks.remove();
       decorate(event);
     }
-    scene.dataset.owlBirthday=String(event.birthday);
     const night=scene.dataset.day==='false';
     vultures.forEach((bird,i)=>{
       show(bird,!night);
@@ -202,20 +200,18 @@
       if(hot)heatTint.setAttribute('opacity',Math.min(.62,.31+(internal-50)*.012));
     }
     const external=telem?.externalValid&&Number.isFinite(telem.externalT)?telem.externalT:undefined;
-    scene.dataset.owlDayVisit=String(external>35||wet);
     const flight=owl.getAttribute('aria-label')?.includes('voando')||owl.getAttribute('aria-label')?.includes('chegando');
     const cycle=now%180000;
-    const perched=!flight&&!storm&&(night||event.birthday||event.festival||external>35);
+    const perched=night&&!flight&&!storm;
     const eating=perched&&!wet&&event.key!=='01-14'&&serial%3===2&&cycle>10000&&cycle<16500;
     if(lastTree!==tree()||lastEaten!==eating||lastDate!==colorTree.date){
       lastTree=tree();lastEaten=eating;colorTree.date=lastDate;colorTree(event,serial,eating);
     }
-    show(sheltered,storm);
+    show(sheltered,night&&storm);
     show(owlHat,event.birthday&&!storm);
     show(umbrella,wet&&!storm);
     show(umbrellaWing,wet&&!storm);
     show(sweater,!storm&&(parts.month===7||night&&external<10));
-    show(sleep,!night&&!storm&&!wet&&!(external>35)&&!flight);
     show(ice,perched&&external>35&&!wet&&!eating);
     show(fruit,eating);
     if(eating)fruit.setAttribute('transform','translate(11 -8) scale('+Math.max(.12,1-Math.floor((cycle-10000)/900)*.14)+')');

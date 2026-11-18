@@ -57,6 +57,7 @@ function updateDaylight(now){
  const second=Math.floor(now/1000);
  if(second===lastLightingSecond)return;
  lastLightingSecond=second;
+ drawGarden(now);
  let day=solarDays.find(day=>now>=day.start&&now<day.start+86400000);
  if(!day){
   const hour=Number(localHour.format(now));
@@ -141,6 +142,7 @@ const fireflies=Array.from({length:6},(_,i)=>{
  return g;
 });
 const owl=node('g',{id:'scene-owl',role:'img','aria-label':'Coruja pousada no telhado',transform:'translate(107 80)'});
+owl.style.display='none';
 svg.insertBefore(owl,clock);
 owl.innerHTML='<path d="M-11-14H11V-2H8v3H-8v-3h-3z" fill="#b98eac"/><path d="M-6-10H6v9H-6z" fill="#efccbd"/><path d="M-7-1h5v3h-5zm9 0h5v3H2z" fill="#efb86c"/><g class="owl-head"><path d="M-10-15v-11l6 4h8l6-4v11l-3 3H-7z" fill="#c79cb8"/><path d="M-8-21H8v7H-8z" fill="#fff4d8"/><path class="owl-pupils" d="M-6-20h2v4h-2zm10 0h2v4H4z" fill="#344057"/><path class="owl-blink" d="M-7-18h5v1h-5zm9 0h5v1H2z" fill="#344057"/><path d="M-2-15h4l-2 3z" fill="#eaa658"/></g>';
 const pupils=owl.querySelector('.owl-pupils'),blink=owl.querySelector('.owl-blink');
@@ -197,13 +199,105 @@ function drawAirflow(now){
   g.setAttribute('opacity',Math.min(1,phase*18,(1-phase)*18).toFixed(2));
  });
 }
+const chicken=node('g',{id:'scene-chicken',role:'img','aria-label':'Galinha ciscando no gramado'});
+svg.insertBefore(chicken,precipitation);
+chicken.innerHTML=`
+ <path class="chicken-shadow" d="M-10-1H9v3h-19z" fill="#2e524a" opacity=".65"/>
+ <g class="chicken-bird">
+  <g fill="none" stroke="#b87539" stroke-width="1.5">
+   <path class="chicken-foot" d="M-4-6v5h5"/>
+   <path class="chicken-foot" d="M3-6v5h5"/>
+  </g>
+  <path d="M-8-13h-5v-3h-3v7h2v3h4" fill="#a65e39" stroke="#633b34" stroke-width="1.2"/>
+  <path d="M-11-13h5v-2h11l5 3v5h-2v3H-6v-1h-4v-3h-2v-4z"
+        fill="#edbb72" stroke="#633b34" stroke-width="1.2"/>
+  <path class="chicken-wing" d="M-8-12h9v2h3v3H-5v-2h-3z"
+        fill="#d68c50" stroke="#9f573d"/>
+  <g class="chicken-head">
+   <path d="M2-18h2v-4h3v2h2v-3h2v2h2v5H2z" fill="#c85745"/>
+   <path d="M6-18h6v2h2v3h-2v3H9v2H5v-3H3v-5h3z" fill="#f7d89b" stroke="#633b34" stroke-width="1.2"/>
+   <path d="M11-12h3v4h-2v2h-2v-4z" fill="#c85745"/>
+   <path d="M13-15h4v1h2v2h-6z" fill="#eba040" stroke="#98542d" stroke-width=".8"/>
+   <path class="chicken-eye" d="M10-16h2v2h-2z" fill="#462b35"/>
+   <path class="chicken-closed-eye" d="M9-15h4v1H9z" fill="#462b35"/>
+  </g>
+ </g>
+ <g class="chicken-dream" aria-hidden="true" fill="#fff0c5" stroke="#3a3c56" stroke-width="1.1" paint-order="stroke fill">
+  <path d="M0 0h6v1L2 6h4v1H0V6l4-5H0z"/>
+  <path d="M0 0h6v1L2 6h4v1H0V6l4-5H0z"/>
+  <path d="M0 0h6v1L2 6h4v1H0V6l4-5H0z"/>
+ </g>`;
+const chickenBird=chicken.querySelector('.chicken-bird');
+const chickenHead=chicken.querySelector('.chicken-head');
+const chickenWing=chicken.querySelector('.chicken-wing');
+const chickenFeet=Array.from(chicken.querySelectorAll('.chicken-foot'));
+const chickenShadow=chicken.querySelector('.chicken-shadow');
+const chickenEye=chicken.querySelector('.chicken-eye');
+const chickenClosedEye=chicken.querySelector('.chicken-closed-eye');
+const chickenDream=chicken.querySelector('.chicken-dream');
+const perch=[318,149],roostMs=1350;
+let chickenWantsPerch=false,chickenTravel=0,chickenDayTime=0;
+let chickenLastFrame=performance.now(),chickenSleepSince=null;
+function drawChicken(){
+ const time=performance.now();
+ const delta=Math.max(0,time-chickenLastFrame);
+ chickenLastFrame=time;
+ const reduced=motion.matches;
+ const target=chickenWantsPerch?1:0;
+ if(reduced)chickenTravel=target;
+ else if(chickenTravel<target)chickenTravel=Math.min(target,chickenTravel+delta/roostMs);
+ else if(chickenTravel>target)chickenTravel=Math.max(target,chickenTravel-delta/roostMs);
+ const sleeping=target===1&&chickenTravel===1;
+ const grounded=target===0&&chickenTravel===0;
+ const hopping=!sleeping&&!grounded;
+ if(grounded&&!reduced)chickenDayTime+=delta;
+ const pace=3900,walk=2100,steps=12;
+ const leg=Math.floor(chickenDayTime/(pace*steps))%2===0?1:-1;
+ const slot=Math.floor(chickenDayTime/pace)%steps;
+ const phase=chickenDayTime%pace;
+ const stride=Math.min(1,phase/walk);
+ const distance=(slot+stride)*25;
+ const groundX=leg===1?48+distance:348-distance;
+ const progress=chickenTravel*chickenTravel*(3-2*chickenTravel);
+ const x=groundX+(perch[0]-groundX)*progress;
+ const y=214+(perch[1]-214)*progress-38*Math.sin(chickenTravel*Math.PI);
+ const flightSide=groundX<=perch[0]?1:-1;
+ const facing=sleeping?1:hopping?flightSide*(target===1?1:-1):leg;
+ const step=grounded&&stride<1&&!reduced?Math.sin(stride*6*Math.PI):0;
+ const peck=grounded&&!reduced&&stride===1?Math.pow(Math.max(0,Math.sin((phase-walk)/115)),3):0;
+ chicken.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
+ chickenBird.setAttribute('transform','translate(0 '+(sleeping?2:-Math.abs(step)).toFixed(2)+') scale('+facing+' 1)');
+ chickenHead.setAttribute('transform','rotate('+(sleeping?29:peck*65).toFixed(2)+' 5 -12)');
+ chickenWing.setAttribute('transform','rotate('+(hopping?37*Math.sin(time/36):0).toFixed(2)+' -4 -10)');
+ chickenFeet.forEach((foot,i)=>{
+  foot.style.display=sleeping?'none':'';
+  foot.setAttribute('transform','rotate('+(hopping?24:step*(i===0?23:-23)).toFixed(2)+' '+(i===0?-4:3)+' -6)');
+ });
+ chickenShadow.style.display=grounded?'':'none';
+ chickenEye.style.display=sleeping?'none':'';
+ chickenClosedEye.style.display=sleeping?'':'none';
+ chickenDream.style.display=sleeping?'':'none';
+ chickenSleepSince=sleeping?(chickenSleepSince??time):null;
+ if(sleeping){
+  Array.from(chickenDream.children).forEach((z,i)=>{
+   const phase=(time-chickenSleepSince)%3100-i*480;
+   const opacity=reduced?1:Math.max(0,Math.min(1,phase/200,(1500-phase)/400));
+   const lift=reduced?0:Math.max(0,Math.min(6,phase/220));
+   z.setAttribute('opacity',opacity.toFixed(2));
+   z.setAttribute('transform','translate('+(14+i*8)+' '+(-17-i*6-lift).toFixed(2)+') scale('+(1+i*.13)+')');
+  });
+ }
+ const label=sleeping?'Galinha dormindo no galho':grounded?'Galinha ciscando no gramado':target===1?'Galinha subindo para o galho':'Galinha descendo para o gramado';
+ if(chicken.getAttribute('aria-label')!==label)chicken.setAttribute('aria-label',label);
+}
+
 let frame=0,last=-Infinity;
-const offstage=[-30,44],branch=[276,155],roof=[107,80];
+const offstage=[-40,44],branch=[276,155],roof=[107,80];
 const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
 let owlVisitStart=null,owlPosition=offstage,owlOrigin=offstage,owlTarget=offstage,owlFlightStart=0;
 let alertFlightStart=null,alertFlightOrigin=branch;
+let owlReady=false,owlInitialized=false;
 function draw(now){
- drawGarden(now);
  updateDaylight(now);
  clouds.setAttribute('transform','translate('+(-515*((now%105000)/105000))+' 0)');
  rainDrops.forEach(({drop,x:originX,y:originY})=>{
@@ -218,19 +312,23 @@ function draw(now){
   wifi.style.opacity=connected?String(.25+.75*(.5+.5*Math.sin(now/240))):'.18';
  }
  const wet=svg.dataset.weather==='rain'||svg.dataset.weather==='snow';
- const night=svg.dataset.day==='false';
+ const night=owlReady&&svg.dataset.day==='false';
  const shelter=svg.dataset.owlShelter==='true';
  const coolerAlert=night&&!shelter&&wind.classList.contains('coolers-active');
  if(coolerAlert&&alertFlightStart===null){
   alertFlightStart=now;
-  alertFlightOrigin=owlPosition===offstage?branch:owlPosition;
+  alertFlightOrigin=owlPosition;
  }else if(!coolerAlert&&alertFlightStart!==null){
   alertFlightStart=null;
   owlTarget=null;
  }
  owlVisitStart=night?(owlVisitStart??now):null;
  const phase=(now-(owlVisitStart??now))%(branchMs+roofMs+2*flightMs);
- const target=night&&phase>=branchMs+flightMs?roof:branch;
+ const target=night?(phase>=branchMs+flightMs?roof:branch):offstage;
+ if(owlReady&&!owlInitialized){
+  owlPosition=owlOrigin=owlTarget=target;
+  owlInitialized=true;
+ }
  if(target!==owlTarget){
   owlOrigin=owlPosition;
   owlTarget=target;
@@ -256,14 +354,15 @@ function draw(now){
  owl.setAttribute('transform','translate('+x+' '+y+')');
  wings.style.display=flying?'':'none';
  wings.setAttribute('transform','scale(1 '+(.7+.45*Math.sin(now/37))+')');
- const asleep=!night&&!wet&&!shelter&&svg.dataset.owlDayVisit!=='true'&&!flying;
- const label=asleep?'Coruja dormindo no galho':coolerAlert&&flying?'Coruja voando enquanto os coolers estão ligados':flying
+ const label=coolerAlert&&flying?'Coruja voando enquanto os coolers estão ligados':flying
   ?(target===offstage?'Coruja voando para longe':'Coruja chegando ao '+(target===branch?'galho':'telhado'))
   :(target===branch?'Coruja pousada no galho':'Coruja pousada no telhado');
  if(owl.getAttribute('aria-label')!==label)owl.setAttribute('aria-label',label);
- const shut=asleep||!motion.matches&&!flying&&now%6700<170;
+ const shut=!motion.matches&&!flying&&now%6700<170;
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
+ if(progress===1)chickenWantsPerch=night;
+ drawChicken();
  fireflies.forEach((g,i)=>{
   g.style.display=wet||svg.dataset.day!=='false'?'none':'';
   const u=now/1000,x0=[35,68,230,256,324,367][i];
@@ -305,7 +404,10 @@ async function refreshWeather(){
   caption();
   lastLightingSecond=-1;
   updateDaylight(Date.now());
- }catch{}finally{clearTimeout(timeout);}
+ }catch{}finally{
+  clearTimeout(timeout);
+  owlReady=true;
+ }
 }
 refreshWeather();setInterval(()=>{if(!document.hidden)refreshWeather();},15*60000);
 })();
