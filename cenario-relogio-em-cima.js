@@ -199,96 +199,154 @@ function drawAirflow(now){
   g.setAttribute('opacity',Math.min(1,phase*18,(1-phase)*18).toFixed(2));
  });
 }
-const chicken=node('g',{id:'scene-chicken',role:'img','aria-label':'Galinha ciscando no gramado'});
-svg.insertBefore(chicken,precipitation);
-chicken.innerHTML=`
- <path class="chicken-shadow" d="M-10-1H9v3h-19z" fill="#2e524a" opacity=".65"/>
- <g class="chicken-bird">
-  <g fill="none" stroke="#b87539" stroke-width="1.5">
-   <path class="chicken-foot" d="M-4-6v5h5"/>
-   <path class="chicken-foot" d="M3-6v5h5"/>
-  </g>
-  <path d="M-8-13h-5v-3h-3v7h2v3h4" fill="#a65e39" stroke="#633b34" stroke-width="1.2"/>
-  <path d="M-11-13h5v-2h11l5 3v5h-2v3H-6v-1h-4v-3h-2v-4z"
-        fill="#edbb72" stroke="#633b34" stroke-width="1.2"/>
-  <path class="chicken-wing" d="M-8-12h9v2h3v3H-5v-2h-3z"
-        fill="#d68c50" stroke="#9f573d"/>
-  <g class="chicken-head">
-   <path d="M2-18h2v-4h3v2h2v-3h2v2h2v5H2z" fill="#c85745"/>
-   <path d="M6-18h6v2h2v3h-2v3H9v2H5v-3H3v-5h3z" fill="#f7d89b" stroke="#633b34" stroke-width="1.2"/>
-   <path d="M11-12h3v4h-2v2h-2v-4z" fill="#c85745"/>
-   <path d="M13-15h4v1h2v2h-6z" fill="#eba040" stroke="#98542d" stroke-width=".8"/>
-   <path class="chicken-eye" d="M10-16h2v2h-2z" fill="#462b35"/>
-   <path class="chicken-closed-eye" d="M9-15h4v1H9z" fill="#462b35"/>
-  </g>
- </g>
- <g class="chicken-dream" aria-hidden="true" fill="#fff0c5" stroke="#3a3c56" stroke-width="1.1" paint-order="stroke fill">
-  <path d="M0 0h6v1L2 6h4v1H0V6l4-5H0z"/>
-  <path d="M0 0h6v1L2 6h4v1H0V6l4-5H0z"/>
-  <path d="M0 0h6v1L2 6h4v1H0V6l4-5H0z"/>
- </g>`;
-const chickenBird=chicken.querySelector('.chicken-bird');
-const chickenHead=chicken.querySelector('.chicken-head');
-const chickenWing=chicken.querySelector('.chicken-wing');
-const chickenFeet=Array.from(chicken.querySelectorAll('.chicken-foot'));
-const chickenShadow=chicken.querySelector('.chicken-shadow');
-const chickenEye=chicken.querySelector('.chicken-eye');
-const chickenClosedEye=chicken.querySelector('.chicken-closed-eye');
-const chickenDream=chicken.querySelector('.chicken-dream');
-const perch=[318,149],roostMs=1350;
-let chickenWantsPerch=false,chickenTravel=0,chickenDayTime=0;
-let chickenLastFrame=performance.now(),chickenSleepSince=null;
-function drawChicken(){
- const time=performance.now();
- const delta=Math.max(0,time-chickenLastFrame);
- chickenLastFrame=time;
- const reduced=motion.matches;
- const target=chickenWantsPerch?1:0;
- if(reduced)chickenTravel=target;
- else if(chickenTravel<target)chickenTravel=Math.min(target,chickenTravel+delta/roostMs);
- else if(chickenTravel>target)chickenTravel=Math.max(target,chickenTravel-delta/roostMs);
- const sleeping=target===1&&chickenTravel===1;
- const grounded=target===0&&chickenTravel===0;
- const hopping=!sleeping&&!grounded;
- if(grounded&&!reduced)chickenDayTime+=delta;
- const pace=3900,walk=2100,steps=12;
- const leg=Math.floor(chickenDayTime/(pace*steps))%2===0?1:-1;
- const slot=Math.floor(chickenDayTime/pace)%steps;
- const phase=chickenDayTime%pace;
- const stride=Math.min(1,phase/walk);
- const distance=(slot+stride)*25;
- const groundX=leg===1?48+distance:348-distance;
- const progress=chickenTravel*chickenTravel*(3-2*chickenTravel);
- const x=groundX+(perch[0]-groundX)*progress;
- const y=214+(perch[1]-214)*progress-38*Math.sin(chickenTravel*Math.PI);
- const flightSide=groundX<=perch[0]?1:-1;
- const facing=sleeping?1:hopping?flightSide*(target===1?1:-1):leg;
- const step=grounded&&stride<1&&!reduced?Math.sin(stride*6*Math.PI):0;
- const peck=grounded&&!reduced&&stride===1?Math.pow(Math.max(0,Math.sin((phase-walk)/115)),3):0;
- chicken.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
- chickenBird.setAttribute('transform','translate(0 '+(sleeping?2:-Math.abs(step)).toFixed(2)+') scale('+facing+' 1)');
- chickenHead.setAttribute('transform','rotate('+(sleeping?29:peck*65).toFixed(2)+' 5 -12)');
- chickenWing.setAttribute('transform','rotate('+(hopping?37*Math.sin(time/36):0).toFixed(2)+' -4 -10)');
- chickenFeet.forEach((foot,i)=>{
-  foot.style.display=sleeping?'none':'';
-  foot.setAttribute('transform','rotate('+(hopping?24:step*(i===0?23:-23)).toFixed(2)+' '+(i===0?-4:3)+' -6)');
- });
- chickenShadow.style.display=grounded?'':'none';
- chickenEye.style.display=sleeping?'none':'';
- chickenClosedEye.style.display=sleeping?'':'none';
- chickenDream.style.display=sleeping?'':'none';
- chickenSleepSince=sleeping?(chickenSleepSince??time):null;
- if(sleeping){
-  Array.from(chickenDream.children).forEach((z,i)=>{
-   const phase=(time-chickenSleepSince)%3100-i*480;
-   const opacity=reduced?1:Math.max(0,Math.min(1,phase/200,(1500-phase)/400));
-   const lift=reduced?0:Math.max(0,Math.min(6,phase/220));
-   z.setAttribute('opacity',opacity.toFixed(2));
-   z.setAttribute('transform','translate('+(14+i*8)+' '+(-17-i*6-lift).toFixed(2)+') scale('+(1+i*.13)+')');
-  });
+
+const frog=node('g',{id:'scene-frog',style:'display:none',role:'img','aria-label':'Sapinho descansando na chuva'});
+frog.innerHTML=
+ '<path fill="#416947" d="M-10-3h20v5h4v3H5V3H-5v2h-9V2h4z"/>'+
+ '<path fill="#83ae5b" d="M-8-9h5v-3h5v3h6v-3h5v7h3v5H-9V-5h1z"/>'+
+ '<path fill="#d4df91" d="M-5-2H5v4H-5z"/>'+
+ '<path fill="#fff4ce" d="M-6-9h4v4h-4zm10 0h4v4H4z"/>'+
+ '<path fill="#263e35" d="M-4-8h2v2h-2zm8 0h2v2H4zM-3-3h6v1h-6z"/>'+
+ '<path class="frog-feet" fill="#699149" d="M-12 2h8v3h-8zm16 0h8v3H4z"/>';
+svg.insertBefore(frog,clock);
+const frogSplash=node('g',{id:'frog-splash',style:'display:none','aria-hidden':'true','pointer-events':'none'});
+svg.insertBefore(frogSplash,frog);
+const splashDrops=Array.from({length:12},()=>node('rect',{width:1.6,height:2.3,fill:'#d7f3ef'},frogSplash));
+const splashRipple=node('ellipse',{rx:3,ry:1,fill:'none',stroke:'#d7f3ef','stroke-width':.8},frogSplash);
+const frogReducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
+// Rain falls in front of the garden and equipment, behind the clock.
+svg.insertBefore(precipitation,clock);
+let rainStarted=null,rainStopped=null,previousRain=false;
+function drawRainVisitors(now){
+ const raining=svg.dataset.weather==='rain';
+ if(raining&&!previousRain){rainStarted=now;rainStopped=null;}
+ if(!raining&&previousRain)rainStopped=now;
+ previousRain=raining;
+ const rainAge=rainStarted===null?0:Math.max(0,now-rainStarted);
+ const water=raining?Math.min(1,rainAge/30000):rainStopped===null?0:Math.max(0,1-(now-rainStopped)/120000);
+ puddles.style.display=water>0?'':'none';
+ puddles.setAttribute('opacity',water.toFixed(2));
+ frog.style.display=raining?'':'none';
+ frogSplash.style.display='none';
+ if(raining){
+  const stops=[[247,206,2400],[300,204,900],[359,210,2200],[300,204,800],[247,206,1800],[190,205,700],[130,205,900],[62,207,2300],[120,205,800],[185,205,700]];
+  const hopMs=720;
+  const cycleMs=stops.reduce((sum,stop)=>sum+stop[2]+hopMs,0);
+  let phase=(frogReducedMotion.matches?0:rainAge)%cycleMs,leg=0;
+  while(phase>=stops[leg][2]+hopMs){phase-=stops[leg][2]+hopMs;leg++;}
+  const from=stops[leg],to=stops[(leg+1)%stops.length];
+  const landed=(leg>0||rainAge>=cycleMs)&&[247,359,62].includes(from[0]);
+  const splashFraction=phase/650;
+  if(landed&&splashFraction<1&&water>.01&&!frogReducedMotion.matches){
+   frogSplash.style.display='';
+   const f=splashFraction;
+   splashDrops.forEach((drop,i)=>{
+    const angle=Math.PI*(.06+.88*i/11),speed=22+(i%3)*7;
+    drop.setAttribute('x',from[0]+Math.cos(angle)*speed*f);
+    drop.setAttribute('y',from[1]+3-Math.sin(angle)*28*f+24*f*f);
+    drop.setAttribute('opacity',String(1-f));
+   });
+   splashRipple.setAttribute('cx',from[0]);splashRipple.setAttribute('cy',from[1]+5);
+   splashRipple.setAttribute('rx',3+16*f);splashRipple.setAttribute('ry',1+2*f);
+   splashRipple.setAttribute('opacity',String(1-f));
+  }
+  const hopping=phase>=from[2];
+  const fraction=hopping?(phase-from[2])/hopMs:0;
+  const arc=Math.sin(Math.PI*fraction);
+  const direction=to[0]>=from[0]?1:-1;
+  const x=from[0]+(to[0]-from[0])*fraction;
+  const y=from[1]+(to[1]-from[1])*fraction-26*arc;
+  frog.setAttribute('transform','translate('+x+' '+y+') scale('+direction*(1+.12*arc)+' '+(1-.1*arc)+')');
+  frog.setAttribute('aria-label',hopping?'Sapinho pulando pelo jardim e pelas poças':'Sapinho descansando entre os pulos');
  }
- const label=sleeping?'Galinha dormindo no galho':grounded?'Galinha ciscando no gramado':target===1?'Galinha subindo para o galho':'Galinha descendo para o gramado';
- if(chicken.getAttribute('aria-label')!==label)chicken.setAttribute('aria-label',label);
+
+}
+
+const vulture=node('g',{id:'scene-vulture',role:'img','aria-label':'Urubu pousado na goiabeira','shape-rendering':'crispEdges'});
+svg.insertBefore(vulture,precipitation);
+vulture.style.display='none';
+vulture.innerHTML=`
+  <g class="vulture-wings">
+   <path d="M-10-16l-11-9h-15v5h4v5h5v4h5v4l12 4zm20 0 11-9h15v5h-4v5h-5v4h-5v4l-12 4z" fill="#37434d"/>
+   <path d="M-14-14l-9-7h-9m7 6 9 6m30-5 9-7h9m-7 6-9 6" fill="none" stroke="#78828b" stroke-width="2"/>
+  </g>
+  <path d="M-8-5h16v6H-8z" fill="#313b45"/>
+  <path d="M-8-18H8v3h4v9H8v4H-8v-4h-4v-9h4z" fill="#414c56"/>
+  <path d="M-6-14H6v10H-6z" fill="#64717c"/>
+  <path d="M-8-20H8v3H5v2H-5v-2h-3z" fill="#f0dec6"/>
+  <path d="M-6-29H6v2h2v6H6v3H-6v-3h-2v-6h2z" fill="#a3a0ac"/>
+  <path d="M-5-27H5v2H-5z" fill="#c4bbc4"/>
+  <path d="M-7-22h2v2h-2zm12 0h2v2H5z" fill="#cb97a6"/>
+  <path class="vulture-eyes" d="M-5-25h3v3h-3zm7 0h3v3H2z" fill="#26333c"/>
+  <path class="vulture-blink" d="M-6-23h4v1h-4zm8 0h4v1H2z" fill="#26333c"/>
+  <path d="M-2-22h5v4H1v2h-2v-3h-1z" fill="#ebba7f"/>
+  <path d="M-7-2h5v3h-5zm9 0h5v3H2z" fill="#c6a483"/>`;
+const vultureWings=vulture.querySelector('.vulture-wings');
+const vultureEyes=vulture.querySelector('.vulture-eyes');
+const vultureBlink=vulture.querySelector('.vulture-blink');
+const vultureAway=[446,38],vultureBranch=[318,149],vultureOtherBranch=[276,155],vultureRoof=[107,80];
+const vultureFlightMs=2200;
+let vultureTarget=null,vulturePosition=vultureAway,vultureOrigin=vultureAway,vultureFlightStart=0;
+let vultureVisitStart=null;
+function drawVulture(now){
+ const daytime=svg.dataset.day==='true';
+ const clock=performance.now();
+ vultureVisitStart=daytime?(vultureVisitStart??clock):null;
+ const phase=(clock-(vultureVisitStart??clock))%(24*60000);
+ const perch=phase<8*60000?vultureBranch:phase<16*60000?vultureOtherBranch:vultureRoof;
+ const target=daytime?perch:vultureAway;
+ if(!owlReady){vulture.style.display='none';return;}
+ if(vultureTarget===null)vulturePosition=vultureOrigin=vultureTarget=target;
+ if(target!==vultureTarget){
+  vultureOrigin=vulturePosition;
+  vultureTarget=target;
+  vultureFlightStart=clock;
+ }
+ const progress=Math.min(1,Math.max(0,(clock-vultureFlightStart)/vultureFlightMs));
+ const flying=!motion.matches&&vultureOrigin!==target&&progress<1;
+ const eased=progress*progress*(3-2*progress);
+ vulturePosition=flying?[
+  vultureOrigin[0]+(target[0]-vultureOrigin[0])*eased,
+  vultureOrigin[1]+(target[1]-vultureOrigin[1])*eased-30*Math.sin(Math.PI*progress)
+ ]:target;
+ vulture.style.display=target!==vultureAway||flying?'':'none';
+ const [x,y]=vulturePosition;
+ const breathing=motion.matches||flying?0:.35*Math.sin(now/820);
+ vulture.setAttribute('transform','translate('+x.toFixed(2)+' '+(y+breathing).toFixed(2)+')');
+ vultureWings.style.display=flying?'':'none';
+ vultureWings.setAttribute('transform','scale(1 '+(.65+.4*Math.sin(clock/62)).toFixed(2)+')');
+ const shut=!flying&&now%6700<170;
+ vultureEyes.style.display=shut?'none':'';
+ vultureBlink.style.display=shut?'':'none';
+ const label=flying?(target===vultureAway?'Urubu indo embora ao pôr do sol':vultureOrigin===vultureAway?'Urubu voltando ao nascer do sol':'Urubu voando entre os poleiros'):target===vultureRoof?'Urubu pousado na estufa':'Urubu pousado na goiabeira';
+ if(vulture.getAttribute('aria-label')!==label)vulture.setAttribute('aria-label',label);
+}
+
+const highVultures=node('g',{id:'sky-vultures',role:'img','aria-label':'Urubus voando bem no alto'});
+sky.append(highVultures);
+const highBirds=Array.from({length:2},(_,i)=>{
+ const bird=node('g',{},highVultures);
+ node('path',{d:'M-6-2h2v1h2v1h4v-1h2v-1h2v2H4v1H2v2H0V1h-2V0h-4z',fill:'#303544'},bird);
+ return bird;
+});
+let highBirdExit=1,highBirdLast=performance.now(),highBirdReady=false;
+function drawHighVultures(){
+ const clock=performance.now();
+ const delta=Math.max(0,clock-highBirdLast);
+ highBirdLast=clock;
+ const target=svg.dataset.day==='true'?0:1;
+ if(!owlReady){highVultures.style.display='none';return;}
+ if(!highBirdReady){highBirdExit=target;highBirdReady=true;}
+ if(motion.matches)highBirdExit=target;
+ else highBirdExit+=Math.sign(target-highBirdExit)*Math.min(Math.abs(target-highBirdExit),delta/2200);
+ highVultures.style.display=highBirdExit<1?'':'none';
+ highBirds.forEach((bird,i)=>{
+  const phase=motion.matches?i:clock/7200+i*1.1;
+  const x=155+i*47+24*Math.cos(phase)+300*highBirdExit;
+  const y=35+i*8+5*Math.sin(phase)-28*highBirdExit;
+  const wing=motion.matches?1:.82+.18*Math.sin(clock/330+i);
+  bird.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+') scale(1 '+wing.toFixed(2)+')');
+ });
 }
 
 let frame=0,last=-Infinity;
@@ -305,7 +363,7 @@ function draw(now){
   const y=((originY+now/7)%245)-15;
   drop.setAttribute('transform','translate('+x+' '+y+')');
  });
- puddles.style.display=svg.dataset.weather==='rain'?'':'none';
+ drawRainVisitors(now);
  const wifi=svg.querySelector('#scene-esp .esp-signal');
  if(wifi){
   const connected=svg.querySelector('#scene-esp').classList.contains('esp-online');
@@ -361,8 +419,9 @@ function draw(now){
  const shut=!motion.matches&&!flying&&now%6700<170;
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
- if(progress===1)chickenWantsPerch=night;
- drawChicken();
+ drawVulture(now);
+ drawHighVultures();
+
  fireflies.forEach((g,i)=>{
   g.style.display=wet||svg.dataset.day!=='false'?'none':'';
   const u=now/1000,x0=[35,68,230,256,324,367][i];

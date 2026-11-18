@@ -20,8 +20,6 @@
   const sky = group(scene);
   const roof = scene.querySelector('#kiln-side');
   if (roof) scene.insertBefore(sky,roof);
-  const vultures = Array.from({length:2},()=>group(sky,
-    '<path fill="#262834" d="M-5-2h2v1h2v1h2v-1h2v-1h2v1H4v1H2v1H1v1h-2V1h-1V0h-2v-1h-1z"/>'));
   let heatTint;
   if (roof) {
     const style = document.createElement('style');
@@ -184,11 +182,6 @@
       decorate(event);
     }
     const night=scene.dataset.day==='false';
-    vultures.forEach((bird,i)=>{
-      show(bird,!night);
-      const phase=reduce.matches?i:now/7200+i*1.1;
-      move(bird,155+i*47+24*Math.cos(phase),40+i*7+5*Math.sin(phase));
-    });
     const wet=scene.dataset.weather==='rain';
     const storm=wet&&Number(scene.dataset.weatherCode)>=95;
     scene.dataset.owlShelter=String(storm);
