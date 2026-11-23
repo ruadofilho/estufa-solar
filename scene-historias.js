@@ -53,7 +53,6 @@
   move(sheltered,303,178);
   show(sheltered,false);
   const meteor = group(sky,'<path d="M-25-13l24 11" stroke="#ddd5ac" stroke-width="1"/><path d="M-4-3l4 2" stroke="#fff1be" stroke-width="3"/>');
-  const witch = group(sky,'<path fill="#333049" d="M-8-5h13v2H-8zm2 7 6-6 5 5h4v3H-7zM-4-5l5-7 2 7z"/><path stroke="#856d66" d="M-12 5H14m-25-1v3h-5V4z"/>');
 
   function easter(year) {
     const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4;
@@ -210,9 +209,7 @@
     if(eating)fruit.setAttribute('transform','translate(11 -8) scale('+Math.max(.12,1-Math.floor((cycle-10000)/900)*.14)+')');
     const skyTime=now%720000;
     show(meteor,night&&!storm&&!reduce.matches&&skyTime>20000&&skyTime<22000);
-    show(witch,night&&!storm&&!reduce.matches&&skyTime>330000&&skyTime<340000);
     if(skyTime>20000&&skyTime<22000)move(meteor,75+(skyTime-20000)*.14,28+(skyTime-20000)*.02);
-    if(skyTime>330000&&skyTime<340000)move(witch,-20+(skyTime-330000)*.044,50+3*Math.sin(now/350));
     if(rocker)rocker.setAttribute('transform','translate(60 199) rotate('+(reduce.matches?0:7*Math.sin(now/390))+')');
     if(fireworks){
       show(fireworks,true);
