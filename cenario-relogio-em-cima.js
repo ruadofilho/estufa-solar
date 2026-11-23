@@ -262,91 +262,70 @@ function drawRainVisitors(now){
 
 }
 
-const vulture=node('g',{id:'scene-vulture',role:'img','aria-label':'Urubu pousado na goiabeira','shape-rendering':'crispEdges'});
-svg.insertBefore(vulture,precipitation);
-vulture.style.display='none';
-vulture.innerHTML=`
-  <g class="vulture-wings">
-   <path d="M-10-16l-11-9h-15v5h4v5h5v4h5v4l12 4zm20 0 11-9h15v5h-4v5h-5v4h-5v4l-12 4z" fill="#37434d"/>
-   <path d="M-14-14l-9-7h-9m7 6 9 6m30-5 9-7h9m-7 6-9 6" fill="none" stroke="#78828b" stroke-width="2"/>
+const falcon=node('g',{id:'scene-falcon',role:'img','aria-label':'Falcão-peregrino pousado na goiabeira','shape-rendering':'crispEdges'});
+svg.insertBefore(falcon,precipitation);
+falcon.style.display='none';
+falcon.innerHTML=`
+  <g class="falcon-wings">
+   <path d="M-9-16-21-28-38-32l5 8 6 4 3 6 15 6zm18 0 12-12 17-4-5 8-6 4-3 6-15 6z" fill="#35455f"/>
+   <path d="m-13-15-10-9-10-5m46 14 10-9 10-5" fill="none" stroke="#8496ac" stroke-width="2"/>
   </g>
-  <path d="M-8-5h16v6H-8z" fill="#313b45"/>
-  <path d="M-8-18H8v3h4v9H8v4H-8v-4h-4v-9h4z" fill="#414c56"/>
-  <path d="M-6-14H6v10H-6z" fill="#64717c"/>
-  <path d="M-8-20H8v3H5v2H-5v-2h-3z" fill="#f0dec6"/>
-  <path d="M-6-29H6v2h2v6H6v3H-6v-3h-2v-6h2z" fill="#a3a0ac"/>
-  <path d="M-5-27H5v2H-5z" fill="#c4bbc4"/>
-  <path d="M-7-22h2v2h-2zm12 0h2v2H5z" fill="#cb97a6"/>
-  <path class="vulture-eyes" d="M-5-25h3v3h-3zm7 0h3v3H2z" fill="#26333c"/>
-  <path class="vulture-blink" d="M-6-23h4v1h-4zm8 0h4v1H2z" fill="#26333c"/>
-  <path d="M-2-22h5v4H1v2h-2v-3h-1z" fill="#ebba7f"/>
-  <path d="M-7-2h5v3h-5zm9 0h5v3H2z" fill="#c6a483"/>`;
-const vultureWings=vulture.querySelector('.vulture-wings');
-const vultureEyes=vulture.querySelector('.vulture-eyes');
-const vultureBlink=vulture.querySelector('.vulture-blink');
-const vultureAway=[446,38],vultureBranch=[318,149],vultureOtherBranch=[276,155],vultureRoof=[107,80];
-const vultureFlightMs=2200;
-let vultureTarget=null,vulturePosition=vultureAway,vultureOrigin=vultureAway,vultureFlightStart=0;
-let vultureVisitStart=null;
-function drawVulture(now){
+  <path d="M-5-8H5v9H-5z" fill="#35455f"/>
+  <path d="M-5-3H5v2H-5z" fill="#8496ac"/>
+  <path d="M-8-17H8v3h3v8H8v3H-8v-3h-3v-8h3z" fill="#536780"/>
+  <path d="M-5-16H5v2h3v6H6v3H-6v-3h-2v-6h3z" fill="#fff0d6"/>
+  <path d="M-6-13H6v1H-6zm0 3H6v1H-6zm2 3h8v1h-8z" fill="#9c8d82"/>
+  <path d="M-7-32H7v2h4v3h2v8h-3v3H7v2H-7v-2h-3v-3h-3v-8h2v-3h4z" fill="#35455f"/>
+  <path d="M-6-30H6v2H-6zm-4 2h3v2h-3z" fill="#7487a0"/>
+  <path d="M-10-23h5v4h3v-2h4v2h3v-4h5v5H7v3H-7v-3h-3z" fill="#fff0d6"/>
+  <g class="falcon-eyes">
+   <path d="M-10-26h7v7h-7zm13 0h7v7H3z" fill="#eab65f"/>
+   <path d="M-9-25h5v5h-5zm13 0h5v5H4z" fill="#1f2939"/>
+   <path d="M-8-25h2v2h-2zm13 0h2v2H5z" fill="#fffbec"/>
+  </g>
+  <path class="falcon-blink" d="M-9-23h5v1h-5zm13 0h5v1H4z" fill="#213043" style="display:none"/>
+  <path d="M-2-21h5v3H2v2H0v-2h-2z" fill="#e9a34d"/>
+  <path d="M0-17h2v1H0z" fill="#35455f"/>
+  <path d="M-7-2h5v2h-5zm9 0h5v2H2z" fill="#eab65f"/>`;
+const falconWings=falcon.querySelector('.falcon-wings');
+const falconEyes=falcon.querySelector('.falcon-eyes');
+const falconBlink=falcon.querySelector('.falcon-blink');
+const falconAway=[446,38],falconBranch=[318,149],falconOtherBranch=[276,155],falconRoof=[107,80];
+const falconFlightMs=2200;
+let falconTarget=null,falconPosition=falconAway,falconOrigin=falconAway,falconFlightStart=0;
+let falconVisitStart=null;
+function drawFalcon(now){
  const daytime=svg.dataset.day==='true';
  const clock=performance.now();
- vultureVisitStart=daytime?(vultureVisitStart??clock):null;
- const phase=(clock-(vultureVisitStart??clock))%(24*60000);
- const perch=phase<8*60000?vultureBranch:phase<16*60000?vultureOtherBranch:vultureRoof;
- const target=daytime?perch:vultureAway;
- if(!owlReady){vulture.style.display='none';return;}
- if(vultureTarget===null)vulturePosition=vultureOrigin=vultureTarget=target;
- if(target!==vultureTarget){
-  vultureOrigin=vulturePosition;
-  vultureTarget=target;
-  vultureFlightStart=clock;
+ falconVisitStart=daytime?(falconVisitStart??clock):null;
+ const phase=(clock-(falconVisitStart??clock))%(24*60000);
+ const perch=phase<8*60000?falconBranch:phase<16*60000?falconOtherBranch:falconRoof;
+ const target=daytime?perch:falconAway;
+ if(!owlReady){falcon.style.display='none';return;}
+ if(falconTarget===null)falconPosition=falconOrigin=falconTarget=target;
+ if(target!==falconTarget){
+  falconOrigin=falconPosition;
+  falconTarget=target;
+  falconFlightStart=clock;
  }
- const progress=Math.min(1,Math.max(0,(clock-vultureFlightStart)/vultureFlightMs));
- const flying=!motion.matches&&vultureOrigin!==target&&progress<1;
+ const progress=Math.min(1,Math.max(0,(clock-falconFlightStart)/falconFlightMs));
+ const flying=!motion.matches&&falconOrigin!==target&&progress<1;
  const eased=progress*progress*(3-2*progress);
- vulturePosition=flying?[
-  vultureOrigin[0]+(target[0]-vultureOrigin[0])*eased,
-  vultureOrigin[1]+(target[1]-vultureOrigin[1])*eased-30*Math.sin(Math.PI*progress)
+ falconPosition=flying?[
+  falconOrigin[0]+(target[0]-falconOrigin[0])*eased,
+  falconOrigin[1]+(target[1]-falconOrigin[1])*eased-30*Math.sin(Math.PI*progress)
  ]:target;
- vulture.style.display=target!==vultureAway||flying?'':'none';
- const [x,y]=vulturePosition;
+ falcon.style.display=target!==falconAway||flying?'':'none';
+ const [x,y]=falconPosition;
  const breathing=motion.matches||flying?0:.35*Math.sin(now/820);
- vulture.setAttribute('transform','translate('+x.toFixed(2)+' '+(y+breathing).toFixed(2)+')');
- vultureWings.style.display=flying?'':'none';
- vultureWings.setAttribute('transform','scale(1 '+(.65+.4*Math.sin(clock/62)).toFixed(2)+')');
+ falcon.setAttribute('transform','translate('+x.toFixed(2)+' '+(y+breathing).toFixed(2)+')');
+ falconWings.style.display=flying?'':'none';
+ falconWings.setAttribute('transform','scale(1 '+(.65+.4*Math.sin(clock/62)).toFixed(2)+')');
  const shut=!flying&&now%6700<170;
- vultureEyes.style.display=shut?'none':'';
- vultureBlink.style.display=shut?'':'none';
- const label=flying?(target===vultureAway?'Urubu indo embora ao pôr do sol':vultureOrigin===vultureAway?'Urubu voltando ao nascer do sol':'Urubu voando entre os poleiros'):target===vultureRoof?'Urubu pousado na estufa':'Urubu pousado na goiabeira';
- if(vulture.getAttribute('aria-label')!==label)vulture.setAttribute('aria-label',label);
-}
-
-const highVultures=node('g',{id:'sky-vultures',role:'img','aria-label':'Urubus voando bem no alto'});
-sky.append(highVultures);
-const highBirds=Array.from({length:2},(_,i)=>{
- const bird=node('g',{},highVultures);
- node('path',{d:'M-6-2h2v1h2v1h4v-1h2v-1h2v2H4v1H2v2H0V1h-2V0h-4z',fill:'#303544'},bird);
- return bird;
-});
-let highBirdExit=1,highBirdLast=performance.now(),highBirdReady=false;
-function drawHighVultures(){
- const clock=performance.now();
- const delta=Math.max(0,clock-highBirdLast);
- highBirdLast=clock;
- const target=svg.dataset.day==='true'?0:1;
- if(!owlReady){highVultures.style.display='none';return;}
- if(!highBirdReady){highBirdExit=target;highBirdReady=true;}
- if(motion.matches)highBirdExit=target;
- else highBirdExit+=Math.sign(target-highBirdExit)*Math.min(Math.abs(target-highBirdExit),delta/2200);
- highVultures.style.display=highBirdExit<1?'':'none';
- highBirds.forEach((bird,i)=>{
-  const phase=motion.matches?i:clock/7200+i*1.1;
-  const x=155+i*47+24*Math.cos(phase)+300*highBirdExit;
-  const y=35+i*8+5*Math.sin(phase)-28*highBirdExit;
-  const wing=motion.matches?1:.82+.18*Math.sin(clock/330+i);
-  bird.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+') scale(1 '+wing.toFixed(2)+')');
- });
+ falconEyes.style.display=shut?'none':'';
+ falconBlink.style.display=shut?'':'none';
+ const label=flying?(target===falconAway?'Falcão-peregrino indo embora ao pôr do sol':falconOrigin===falconAway?'Falcão-peregrino voltando ao nascer do sol':'Falcão-peregrino voando entre os poleiros'):target===falconRoof?'Falcão-peregrino pousado na estufa':'Falcão-peregrino pousado na goiabeira';
+ if(falcon.getAttribute('aria-label')!==label)falcon.setAttribute('aria-label',label);
 }
 
 let frame=0,last=-Infinity;
@@ -419,8 +398,7 @@ function draw(now){
  const shut=!motion.matches&&!flying&&now%6700<170;
  pupils.setAttribute("opacity",shut?"0":"1");
  blink.setAttribute("opacity",shut?"1":"0");
- drawVulture(now);
- drawHighVultures();
+ drawFalcon(now);
 
  fireflies.forEach((g,i)=>{
   g.style.display=wet||svg.dataset.day!=='false'?'none':'';
