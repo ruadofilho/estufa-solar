@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; connect-src https://*.workers.dev; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="theme-color" content="#285541">
+  <title>Comprar mini piano | Petit Piano</title>
+  <link rel="stylesheet" href="comprar.css">
+  <script src="comprar.js" defer></script>
+</head>
+<body>
+  <header class="page-header"><a href="./" class="brand">PETIT PIANO</a><a href="./">Voltar à estufa</a></header>
+  <main class="shop-window" data-frete-api="">
+    <section class="product" aria-labelledby="product-title">
+      <img src="pianinho-vermelho.png" alt="Mini piano vermelho" width="480" height="350">
+      <div>
+        <h1 id="product-title">Mini piano</h1>
+        <p>Um instrumento pra brincar e criar suas próprias músicas, em qualquer idade.</p>
+        <strong class="price">R$ 397,00</strong>
+        <p class="muted">Preço do pianinho na compra direta.</p>
+      </div>
+    </section>
+    <section class="order" aria-labelledby="shipping-title">
+      <h2 id="shipping-title">Entrega por SEDEX</h2>
+      <form id="quote-form">
+        <label for="cep">CEP de entrega</label>
+        <div class="quote-row">
+          <input id="cep" name="cep" required maxlength="9" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" pattern="[0-9]{5}-?[0-9]{3}">
+          <button type="submit">Consultar frete</button>
+        </div>
+      </form>
+      <p id="quote-status" class="status" role="status"></p>
+      <dl id="quote-summary" class="summary" hidden>
+        <div><dt>Mini piano</dt><dd id="product-price"></dd></div>
+        <div><dt>SEDEX</dt><dd id="shipping-price"></dd></div>
+        <div class="total"><dt>Total com frete</dt><dd id="order-total"></dd></div>
+      </dl>
+      <section class="payment" aria-labelledby="pix-title">
+        <h2 id="pix-title">Pagamento por Pix</h2>
+        <p>R$ 397,00 à vista, mais o frete SEDEX. Envie seu CEP por e-mail para confirmar o pedido e receber os dados do Pix.</p>
+        <a class="order-link" id="email-order" href="mailto:ruadofilho@gmail.com?subject=Compra%20direta%20do%20mini%20piano">Solicitar pedido por e-mail</a>
+      </section>
+      <details class="shipping-alternative">
+        <summary>Simular no site dos Correios</summary>
+        <p>Use a modalidade SEDEX, o CEP de origem 18086-101 e uma caixa de 41 × 41 × 13 cm, com 2,6 kg.</p>
+        <a href="https://www2.correios.com.br/sistemas/precosprazos/default.cfm" target="_blank" rel="noopener noreferrer">Abrir simulador dos Correios</a>
+      </details>
+    </section>
+  </main>
+</body>
+</html>
