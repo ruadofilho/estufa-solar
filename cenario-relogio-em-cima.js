@@ -207,6 +207,120 @@ function drawPuddles(now){
 
 svg.insertBefore(precipitation,clock);
 
+const turtleRestX=326,turtlePuddleX=359,turtleGround=207;
+const turtleBush=node('g',{transform:'translate(325 207)', 'aria-hidden':'true'});
+turtleBush.innerHTML=
+ '<path d="M-24 0v-6h4v-5h5v-5h8v3h6v-6h9v3h6v4h5v4h6v8z" fill="#426b54" stroke="#345349" stroke-width="1.5"/>'+
+ '<path d="M-20-5v-4h6v-4h7v5h-5v3zm20-5v-6h8v3h6v5H8v-2zm16 7v-4h4v4z" fill="#86a268"/>'+
+ '<path d="M-20-2h11m19 0h12" stroke="#65905f" stroke-width="2"/>';
+svg.insertBefore(turtleBush,precipitation);
+
+const turtleWater=node('g',{id:'turtle-water',transform:'translate('+turtlePuddleX+' 214)','aria-hidden':'true'});
+turtleWater.innerHTML='<path d="M-18 0h37v2h4v2h-4v1h-37v-1h-4V2h4z" fill="#80b8bf" stroke="#547f93"/>';
+svg.insertBefore(turtleWater,precipitation);
+const turtle=node('g',{id:'scene-turtle',role:'img'});
+turtle.innerHTML=`
+ <g class="turtle-body">
+  <path d="M-13-4h-5v4h5zm1-2h24v5h-24z" fill="#769165" stroke="#304f43" stroke-width="1.2"/>
+  <g class="turtle-feet" fill="#7f9e69" stroke="#345346" stroke-width="1.2">
+   <path d="M-12-3h6v7h-7V0zm14 0h6v7H1V0z"/>
+  </g>
+  <path d="M8-7h4v-5h3v-2h7v2h4v8h-4v2h-8v3H8z" fill="#a7c18a" stroke="#345346" stroke-width="1.4"/>
+  <path d="M15-12h6v2h-6z" fill="#cbd5a1"/>
+  <path d="M19-11h3v4h-3z" fill="#26443c"/>
+  <path d="M19-11h1v1h-1z" fill="#fff5d7"/>
+  <path d="M17-6h2v1h-2z" fill="#dc9d8f"/>
+  <path d="M20-5h3v-1h1v2h-4z" fill="#42614d"/>
+ </g>
+ <path d="M-15 0v-7h3v-5h4v-4H4v2h5v4h3v4h2v6z" fill="#5b765a" stroke="#324b42" stroke-width="1.5"/>
+ <path d="M-11-7v-3h4v-4H3v2h5v4h3v5h-22z" fill="#9aad70"/>
+ <path d="M-5-14l-2 6 3 5m8-10 2 6-2 4m-11-5h13" fill="none" stroke="#587556" stroke-width="1.3"/>
+ <path d="M-12-2h24v2h-24z" fill="#6e885e"/>
+`;
+svg.insertBefore(turtle,precipitation);
+const turtleBody=turtle.querySelector('.turtle-body');
+const turtleFeet=turtle.querySelector('.turtle-feet');
+const turtleRipple=node('path',{
+ id:'turtle-ripple',d:'M-18 0h7m22 0h8m-30 2h22',transform:'translate('+turtlePuddleX+' 216)',
+ fill:'none',stroke:'#d7efed','stroke-width':1,'aria-hidden':'true'
+});
+svg.insertBefore(turtleRipple,precipitation);
+const turtleZzz=node('text',{
+ id:'turtle-zzz',x:turtleRestX+11,y:turtleGround-24,fill:'#fff1c4',stroke:'#443b59','stroke-width':1.7,
+ 'paint-order':'stroke','font-family':'monospace','font-size':10,'font-weight':'bold','aria-hidden':'true'
+});
+turtleZzz.textContent='Zzz…';
+svg.insertBefore(turtleZzz,precipitation);
+
+const turtleLeft=42,turtleRight=353,turtleSpeed=.013;
+const turtleWalkSpan=turtleRight-turtleLeft;
+const turtleLabels={
+ walk:'Tartaruguinha passeando pelo jardim',
+ rest:'Tartaruguinha indo descansar junto à moita',
+ pond:'Tartaruguinha entrando na poça',
+ sleep:'Tartaruguinha dormindo dentro do casco junto à moita',
+ submerged:'Tartaruguinha na poça, só com o casco para fora da água'
+};
+let turtleMode=null,turtleChanged=0,turtleTravelMs=0,turtleWalkStart=0;
+let turtlePose={x:72,y:turtleGround,direction:1};
+let turtleOrigin=turtlePose;
+function drawTurtle(now){
+ const still=motion.matches;
+ const mode=svg.dataset.day==='false'?'rest':svg.dataset.weather==='rain'?'pond':'walk';
+ const destination=mode==='rest'?turtleRestX:turtlePuddleX;
+ const destinationY=mode==='rest'?turtleGround:216;
+ if(turtleMode!==mode){
+  turtleOrigin=turtlePose;
+  turtleChanged=now;
+  const offset=Math.max(0,Math.min(turtleWalkSpan,turtlePose.x-turtleLeft));
+  turtleWalkStart=turtlePose.direction===1?offset:2*turtleWalkSpan-offset;
+  turtleTravelMs=still||turtleMode===null?0:Math.max(800,Math.abs(destination-turtlePose.x)/.055);
+  turtleMode=mode;
+ }
+ const elapsed=Math.max(0,now-turtleChanged);
+ let label=mode,body=true,sleeping=false,submerged=false,retraction=0,bob=0;
+ if(mode==='walk'){
+  const distance=(turtleWalkStart+(still?0:elapsed*turtleSpeed))%(2*turtleWalkSpan);
+  const direction=distance<turtleWalkSpan?1:-1;
+  const x=turtleLeft+(direction===1?distance:2*turtleWalkSpan-distance);
+  const settle=Math.min(1,elapsed/500);
+  turtlePose={x,y:turtleOrigin.y+(turtleGround-turtleOrigin.y)*settle,direction};
+  bob=still?0:Math.sin(elapsed/300);
+ }else{
+  const approachMs=turtleTravelMs*1.7;
+  const tuckMs=turtleTravelMs*.15;
+  const approach=approachMs?Math.min(1,elapsed/approachMs):1;
+  const tuck=tuckMs?Math.max(0,Math.min(1,(elapsed-approachMs)/tuckMs)):1;
+  turtlePose={
+   x:turtleOrigin.x+(destination-turtleOrigin.x)*approach,
+   y:turtleOrigin.y+(turtleGround-turtleOrigin.y)*approach+(destinationY-turtleGround)*tuck,
+   direction:destination===turtleOrigin.x?turtleOrigin.direction:Math.sign(destination-turtleOrigin.x)
+  };
+  sleeping=mode==='rest'&&tuck===1;
+  submerged=mode==='pond'&&tuck===1;
+  body=!sleeping&&!submerged;
+  retraction=tuck;
+  bob=still||!body||approach===1?0:Math.sin(elapsed/240);
+  if(sleeping)label='sleep';
+  if(submerged)label='submerged';
+ }
+ const {x,y,direction}=turtlePose;
+ turtle.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+') scale('+direction+' 1)');
+ turtleBody.style.display=body?'':'none';
+ turtleBody.setAttribute('opacity',String(1-retraction));
+ turtleFeet.setAttribute('transform','translate(0 '+bob.toFixed(2)+')');
+ turtleWater.style.display=mode==='pond'?'':'none';
+ turtleRipple.style.display=submerged?'':'none';
+ turtleRipple.setAttribute('opacity',still?'1':String(.6+.35*Math.sin(now/380)));
+ turtleZzz.style.display=sleeping?'':'none';
+ turtleZzz.setAttribute('opacity',still||elapsed%2100<1450?'1':'0');
+ if(turtle.dataset.pose!==label){
+  turtle.dataset.pose=label;
+  turtle.setAttribute('aria-label',turtleLabels[label]);
+ }
+}
+
+
 let frame=0,last=-Infinity;
 const offstage=[-40,44],branch=[276,155],roof=[107,80];
 const flightMs=1700,branchMs=15*60000,roofMs=7*60000;
@@ -222,6 +336,7 @@ function draw(now){
   drop.setAttribute('transform','translate('+x+' '+y+')');
  });
  drawPuddles(now);
+ drawTurtle(performance.now());
  const wifi=svg.querySelector('#scene-esp .esp-signal');
  if(wifi){
   const connected=svg.querySelector('#scene-esp').classList.contains('esp-online');
